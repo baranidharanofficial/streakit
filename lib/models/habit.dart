@@ -36,10 +36,12 @@ class Habit {
       notes: map['notes'],
       icon: map['icon'],
       color: map['color'],
-      completedDays: (map['completed_days'] as String)
-          .split(',')
-          .map((dateStr) => DateTime.parse(dateStr))
-          .toList(),
+      completedDays: (map['completed_days'] as String).isNotEmpty
+          ? (map['completed_days'] as String)
+              .split(',')
+              .map((dateStr) => DateTime.parse(dateStr))
+              .toList()
+          : [],
     );
   }
 

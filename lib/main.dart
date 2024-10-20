@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:streakit/models/habit.dart';
+import 'package:streakit/pages/splash.dart';
 import 'package:streakit/service/db_service.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 void main() {
   runApp(const MyApp());
 }
+
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -14,11 +18,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Streakit',
+      scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const HabitListPage(),
+      home: const SplashScreen(),
     );
   }
 }
