@@ -168,17 +168,19 @@ class HabitCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: List.generate(7, (index) {
                   return Expanded(
-                    child: Container(
-                      margin: EdgeInsets.all(
-                        sizeConfig.xxs,
-                      ),
-                      height: 20, // Add margin for spacing
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: habit.completedDays
-                                .contains(threeWeeks[windex][index])
-                            ? colors[habit.color]
-                            : colors[habit.color].withOpacity(0.5),
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: Container(
+                        margin: EdgeInsets.all(
+                          sizeConfig.xxs,
+                        ),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: habit.completedDays
+                                  .contains(threeWeeks[windex][index])
+                              ? colors[habit.color]
+                              : colors[habit.color].withOpacity(0.5),
+                        ),
                       ),
                     ),
                   );

@@ -191,26 +191,28 @@ class _UpdateHabitScreenState extends State<UpdateHabitScreen> {
                             selectedIcon = index;
                           });
                         },
-                        child: Container(
-                          margin: EdgeInsets.all(
-                            sizeConfig.xxs,
-                          ),
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: selectedIcon == index
-                                ? Colors.white
-                                : const Color(0xFF2B2B2B),
-                            borderRadius: BorderRadius.circular(
-                              sizeConfig.xl,
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: Container(
+                            margin: EdgeInsets.all(
+                              sizeConfig.xxs,
                             ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              icons[index],
+                            decoration: BoxDecoration(
                               color: selectedIcon == index
-                                  ? Colors.black
-                                  : const Color(0xFFE0E0E0),
-                              size: sizeConfig.xxxxxl,
+                                  ? Colors.white
+                                  : const Color(0xFF2B2B2B),
+                              borderRadius: BorderRadius.circular(
+                                sizeConfig.xl,
+                              ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                icons[index],
+                                color: selectedIcon == index
+                                    ? Colors.black
+                                    : const Color(0xFFE0E0E0),
+                                size: sizeConfig.xxxxxl,
+                              ),
                             ),
                           ),
                         ),
@@ -250,21 +252,23 @@ class _UpdateHabitScreenState extends State<UpdateHabitScreen> {
                             selectedColor = index;
                           });
                         },
-                        child: Container(
-                          margin: EdgeInsets.all(
-                            sizeConfig.xxs,
-                          ),
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: colors[index],
-                            borderRadius: BorderRadius.circular(
-                              sizeConfig.xl,
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: Container(
+                            margin: EdgeInsets.all(
+                              sizeConfig.xxs,
                             ),
-                            border: Border.all(
-                              color: selectedColor == index
-                                  ? Colors.white
-                                  : Colors.transparent,
-                              width: 3,
+                            decoration: BoxDecoration(
+                              color: colors[index],
+                              borderRadius: BorderRadius.circular(
+                                sizeConfig.xl,
+                              ),
+                              border: Border.all(
+                                color: selectedColor == index
+                                    ? Colors.white
+                                    : Colors.transparent,
+                                width: 3,
+                              ),
                             ),
                           ),
                         ),

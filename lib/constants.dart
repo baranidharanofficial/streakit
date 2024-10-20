@@ -14,7 +14,7 @@ List<IconData> icons = [
 
 List<Color> colors = [
   const Color(0xFFFF3030),
-  const Color(0xFF2ECF2E),
+  const Color(0xFFAD26D6),
   const Color(0xFF4949FF),
   const Color(0xFFEDAE00),
   const Color(0xFF3BCECE),

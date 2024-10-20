@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:streakit/constants.dart';
 import 'package:streakit/models/habit.dart';
+import 'package:streakit/pages/calendar.dart';
+import 'package:streakit/pages/notifications.dart';
 import 'package:streakit/pages/update_habit.dart';
 import 'package:streakit/pages/new_habit.dart';
 import 'package:streakit/pages/widgets/habit_card.dart';
@@ -36,12 +38,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final allhabits = await _dbHelper.readAllHabits();
 
-    allhabits.forEach((habit) {
+    for (var habit in allhabits) {
       if (habit.completedDays.contains(DateTime(
           DateTime.now().year, DateTime.now().month, DateTime.now().day))) {
         habitCount++;
       }
-    });
+    }
 
     setState(() {
       habits = allhabits;
@@ -115,7 +117,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     Row(
                       children: [
                         IconButton.filled(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const NotificationScreen(),
+                              ),
+                            );
+                          },
                           style: IconButton.styleFrom(
                             backgroundColor: const Color(0xFF222222),
                             padding: EdgeInsets.all(
@@ -129,7 +139,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         IconButton.filled(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CalendarScreen(),
+                              ),
+                            );
+                          },
                           style: IconButton.styleFrom(
                             backgroundColor: const Color(0xFF222222),
                             padding: EdgeInsets.all(
@@ -246,7 +263,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           crossAxisCount: 2,
                           crossAxisSpacing: sizeConfig.large,
                           mainAxisSpacing: sizeConfig.large,
-                          mainAxisExtent: 240,
+                          childAspectRatio: 3 / 3.6,
                         ),
                         itemCount: habits.length,
                         shrinkWrap: true,
