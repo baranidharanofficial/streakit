@@ -17,8 +17,8 @@ List<Color> colors = [
   const Color(0xFFAD26D6),
   const Color(0xFF4949FF),
   const Color(0xFFEDAE00),
-  const Color(0xFF3BCECE),
-  const Color(0xFFFF962D),
+  const Color(0xFF39CE48),
+  const Color(0xFFFF8000),
 ];
 
 ButtonStyle buttonStyle = FilledButton.styleFrom(

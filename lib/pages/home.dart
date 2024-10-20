@@ -429,7 +429,7 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                         ),
                       );
                       if (isUpdated) {
-                        widget.onChange();
+                        widget.onChange(null, null);
                       }
                       Navigator.pop(context);
                     },
