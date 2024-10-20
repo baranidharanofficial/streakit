@@ -1,4 +1,4 @@
-package com.example.streakit
+package com.glactic.streakit
 
 import io.flutter.embedding.android.FlutterActivity
 
