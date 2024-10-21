@@ -1,3 +1,4 @@
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:streakit/constants.dart';
@@ -17,11 +18,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     var height = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: const Color(0xFF171717),
-      body: SafeArea(
-        child: Column(
-          children: [
-            SizedBox(
+      body: Column(
+        children: [
+          SafeArea(
+            child: Container(
               height: height * 0.44,
+              color: const Color(0xFF171717),
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -35,12 +37,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
             ),
-            Container(
-              height: height * 0.45,
+          ),
+          Expanded(
+            child: Container(
               width: width,
-              padding: EdgeInsets.symmetric(
-                vertical: sizeConfig.xxxxxl,
-                horizontal: sizeConfig.xxxxxl,
+              padding: EdgeInsets.only(
+                top: sizeConfig.xxxxxl,
+                bottom: sizeConfig.xxxxxl * 2,
+                left: sizeConfig.xxxxxl,
+                right: sizeConfig.xxxxxl,
               ),
               decoration: BoxDecoration(
                 color: Colors.black,
@@ -70,12 +75,40 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     ],
                   ),
-                  Text(
-                    "Effortlessly",
-                    style: textConfig.greyTitle.copyWith(
-                      fontSize: sizeConfig.xxl * 2,
-                      color: const Color(0xFF383838),
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      AnimatedTextKit(
+                        repeatForever: true,
+                        pause: const Duration(milliseconds: 0),
+                        animatedTexts: [
+                          RotateAnimatedText(
+                            'Focus',
+                            textStyle: textConfig.greyTitle.copyWith(
+                              fontSize: sizeConfig.xxl * 2,
+                              color: const Color(0xFFFF4F4F),
+                            ),
+                          ),
+                          RotateAnimatedText(
+                            'Track',
+                            textStyle: textConfig.greyTitle.copyWith(
+                              fontSize: sizeConfig.xxl * 2,
+                              color: const Color(0xFFFFA837),
+                            ),
+                          ),
+                          RotateAnimatedText(
+                            'Achieve',
+                            textStyle: textConfig.greyTitle.copyWith(
+                              fontSize: sizeConfig.xxl * 2,
+                              color: const Color(0xFF6DD242),
+                            ),
+                          ),
+                        ],
+                        onTap: () {
+                          print("Tap Event");
+                        },
+                      ),
+                    ],
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -116,8 +149,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
