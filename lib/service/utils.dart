@@ -25,24 +25,21 @@ void showSnackBar(String message) {
 }
 
 List<List<DateTime>> getLastThreeWeeks(DateTime currentDate) {
-  // Find the most recent Sunday before or on the current date and set its time to 00:00:00
-  DateTime lastSunday =
-      DateTime(currentDate.year, currentDate.month, currentDate.day)
-          .subtract(Duration(days: currentDate.weekday % 7));
+  // Start from the Sunday of the current week (shift back to Sunday)
+  DateTime startOfCurrentWeek = currentDate
+      .subtract(Duration(days: currentDate.weekday % 7)); // Start from Sunday
 
-  // Create a list to store the weeks (each week is a list of DateTime objects)
   List<List<DateTime>> lastThreeWeeks = [];
 
-  // Generate the weeks (starting from last Sunday and going back 3 weeks)
+  // Loop for the current week and the last two weeks
   for (int i = 0; i < 3; i++) {
     List<DateTime> week = [];
     for (int j = 0; j < 7; j++) {
-      // Each week contains 7 days (Sunday to Saturday) with time set to 00:00:00
-      DateTime day = lastSunday.subtract(Duration(days: j + (i * 7)));
-      week.add(DateTime(day.year, day.month, day.day)); // Set time to 00:00:00
+      DateTime day = startOfCurrentWeek.add(Duration(days: j - (i * 7)));
+      week.add(DateTime(day.year, day.month, day.day));
     }
-    // Add the week (in reverse order so that Sunday to Saturday is the correct order)
-    lastThreeWeeks.add(week.reversed.toList());
+    lastThreeWeeks
+        .add(week); // No need to reverse, we want [Sunday -> Saturday]
   }
 
   return lastThreeWeeks;
@@ -81,17 +78,28 @@ int getStreakNumber(List<DateTime> completedDays) {
 }
 
 List<List<DateTime>> getLastYearWeeks(DateTime currentDate) {
-  DateTime lastSunday =
-      DateTime(currentDate.year, currentDate.month, currentDate.day)
-          .subtract(Duration(days: currentDate.weekday % 7));
-  List<List<DateTime>> lastYearWeeks = [];
+  // Start from the Sunday of the current week (shift back to Sunday)
+  DateTime startOfCurrentWeek = currentDate
+      .subtract(Duration(days: currentDate.weekday % 7)); // Start from Sunday
+
+  List<List<DateTime>> lastThreeWeeks = [];
+
+  // Loop for the current week and the last two weeks
   for (int i = 0; i < 52; i++) {
     List<DateTime> week = [];
     for (int j = 0; j < 7; j++) {
-      DateTime day = lastSunday.subtract(Duration(days: j + (i * 7)));
+      DateTime day = startOfCurrentWeek.add(Duration(days: j - (i * 7)));
       week.add(DateTime(day.year, day.month, day.day));
     }
-    lastYearWeeks.add(week.reversed.toList());
+    lastThreeWeeks
+        .add(week); // No need to reverse, we want [Sunday -> Saturday]
   }
-  return lastYearWeeks.reversed.toList();
+
+  return lastThreeWeeks.reversed.toList();
+}
+
+bool isSameDate(DateTime date1, DateTime date2) {
+  return date1.year == date2.year &&
+      date1.month == date2.month &&
+      date1.day == date2.day;
 }

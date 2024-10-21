@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:streakit/constants.dart';
 import 'package:streakit/models/habit.dart';
+import 'package:streakit/service/utils.dart';
 
 class HabitCard extends StatelessWidget {
   const HabitCard({
@@ -9,11 +10,9 @@ class HabitCard extends StatelessWidget {
     required this.deleteHabit,
     required this.markHabitAsDone,
     required this.threeWeeks,
-    required this.streak,
   });
 
   final Habit habit;
-  final int streak;
   final Function deleteHabit;
   final Function markHabitAsDone;
   final List<List<DateTime>> threeWeeks;
@@ -124,7 +123,7 @@ class HabitCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                streak.toString(),
+                getStreakNumber(habit.completedDays).toString(),
                 style: textConfig.whiteTitle.copyWith(
                   fontWeight: FontWeight.w500,
                   color: colors[habit.color],
@@ -171,15 +170,22 @@ class HabitCard extends StatelessWidget {
                     child: AspectRatio(
                       aspectRatio: 1,
                       child: Container(
-                        margin: EdgeInsets.all(
-                          sizeConfig.xxs,
+                        margin: const EdgeInsets.all(
+                          2,
                         ),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSameDate(
+                                    threeWeeks[windex][index], DateTime.now())
+                                ? colors[habit.color]
+                                : Colors.transparent,
+                            width: 1,
+                          ),
                           color: habit.completedDays
                                   .contains(threeWeeks[windex][index])
                               ? colors[habit.color]
-                              : colors[habit.color].withOpacity(0.5),
+                              : colors[habit.color].withOpacity(0.2),
                         ),
                       ),
                     ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:streakit/constants.dart';
+import 'package:streakit/pages/home.dart';
 import 'package:streakit/pages/onboarding.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -13,13 +15,25 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(seconds: 2), () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const OnboardingScreen(),
-          ),
-        );
+      Future.delayed(const Duration(seconds: 2), () async {
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        final bool onboarded = prefs.getBool('onboarded') ?? false;
+
+        if (onboarded) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const HomeScreen(),
+            ),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const OnboardingScreen(),
+            ),
+          );
+        }
       });
     });
     super.initState();

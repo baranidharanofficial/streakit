@@ -236,16 +236,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                       : 0; // Divide percentage by 10 to get the number of circles
 
                                   return Expanded(
-                                    child: Container(
-                                      margin: EdgeInsets.all(sizeConfig.xxs),
-                                      height: 30, // Add margin for spacing
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: index < highlightedCircles
-                                            ? Colors
-                                                .green // Highlighted circles
-                                            : Colors.green.withOpacity(
-                                                0.3), // Unhighlighted circles
+                                    child: AspectRatio(
+                                      aspectRatio: 1,
+                                      child: Container(
+                                        margin: const EdgeInsets.all(2),
+                                        // Add margin for spacing
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: index < highlightedCircles
+                                              ? Colors
+                                                  .green // Highlighted circles
+                                              : Colors.green.withOpacity(
+                                                  0.2), // Unhighlighted circles
+                                        ),
                                       ),
                                     ),
                                   );
@@ -299,8 +302,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     lastYearWeeks: getLastYearWeeks(
                                       DateTime.now(),
                                     ),
-                                    streak: getStreakNumber(
-                                        habits[index].completedDays),
                                     habit: habits[index],
                                   );
                                 },
@@ -309,8 +310,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: HabitCard(
                               habit: habits[index],
                               threeWeeks: threeWeeks,
-                              streak:
-                                  getStreakNumber(habits[index].completedDays),
                               markHabitAsDone:
                                   (Habit habit, DateTime date) async {
                                 if (habit.completedDays.contains(date)) {
@@ -349,12 +348,10 @@ class _HomeScreenState extends State<HomeScreen> {
 class HabitBottomSheet extends StatefulWidget {
   final Habit habit;
   final List<List<DateTime>> lastYearWeeks;
-  final int streak;
   final Function onChange;
   const HabitBottomSheet({
     super.key,
     required this.habit,
-    required this.streak,
     required this.lastYearWeeks,
     required this.onChange,
   });
@@ -602,8 +599,7 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        (widget.streak < 10 && widget.streak > 0 ? "0" : "") +
-                            widget.streak.toString(),
+                        getStreakNumber(widget.habit.completedDays).toString(),
                         style: textConfig.whiteTitle.copyWith(
                           fontWeight: FontWeight.w500,
                           color: colors[widget.habit.color],
@@ -652,8 +648,8 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: List.generate(7, (index) {
                               return Container(
-                                margin: EdgeInsets.all(
-                                  sizeConfig.xxs,
+                                margin: const EdgeInsets.all(
+                                  2,
                                 ),
                                 height: 18,
                                 width: 18,

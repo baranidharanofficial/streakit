@@ -289,11 +289,6 @@ class _UpdateHabitScreenState extends State<UpdateHabitScreen> {
                   return;
                 }
 
-                if (habitNotes.isEmpty) {
-                  showSnackBar("Habit Name is required");
-                  return;
-                }
-
                 if (selectedIcon == null) {
                   showSnackBar("Icon is required");
                   return;
