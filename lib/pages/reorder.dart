@@ -13,6 +13,7 @@ class _ReorderHabitsState extends State<ReorderHabits> {
   int? _selectedHabitIndex;
   List<Habit> _habits = [];
   bool isReordering = false;
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -21,7 +22,10 @@ class _ReorderHabitsState extends State<ReorderHabits> {
   }
 
   Future<void> _loadHabits() async {
+    isLoading = true;
+    setState(() {});
     _habits = await _dbHelper.readAllHabits();
+    isLoading = false;
     setState(() {});
   }
 
@@ -56,9 +60,16 @@ class _ReorderHabitsState extends State<ReorderHabits> {
         ),
       ),
       body: _habits.isEmpty
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
+          ? isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(),
+                )
+              : Center(
+                  child: Text(
+                    "No Habits Created yet",
+                    style: textConfig.whiteLarge,
+                  ),
+                )
           : Padding(
               padding: EdgeInsets.all(sizeConfig.large),
               child: Theme(

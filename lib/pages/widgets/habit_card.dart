@@ -32,7 +32,7 @@ class HabitCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(
           sizeConfig.large,
         ),
-        color: const Color.fromRGBO(26, 26, 26, 1),
+        color: const Color(0xFF262626),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:streakit/constants.dart';
 
 class CustomGridView extends StatelessWidget {
   const CustomGridView({
@@ -25,6 +26,9 @@ class CustomGridView extends StatelessWidget {
     return ListView.builder(
       physics: physics,
       shrinkWrap: shrinkWrap,
+      padding: EdgeInsets.only(
+        top: sizeConfig.large,
+      ),
       itemCount: (length / crossAxisCount).ceil(),
       itemBuilder: (BuildContext context, int listIndex) {
         return Row(
