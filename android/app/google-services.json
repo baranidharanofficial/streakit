@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "820732511779",
+    "project_id": "streakit-app",
+    "storage_bucket": "streakit-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:820732511779:android:736a6dbd4c90f6e8a79396",
+        "android_client_info": {
+          "package_name": "com.glactic.streakit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB07dvCqF1CpqfUcDhEAfcD9QGlicmXCjk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

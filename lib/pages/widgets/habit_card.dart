@@ -10,20 +10,29 @@ class HabitCard extends StatelessWidget {
     required this.deleteHabit,
     required this.markHabitAsDone,
     required this.threeWeeks,
+    required this.isGrid,
+    required this.lastYearWeeks,
   });
 
   final Habit habit;
   final Function deleteHabit;
   final Function markHabitAsDone;
   final List<List<DateTime>> threeWeeks;
+  final List<List<DateTime>> lastYearWeeks;
+  final bool isGrid;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(sizeConfig.large),
+      margin: EdgeInsets.only(
+        bottom: sizeConfig.large,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFF2B2B2B),
-        borderRadius: BorderRadius.circular(sizeConfig.large),
+        borderRadius: BorderRadius.circular(
+          sizeConfig.large,
+        ),
+        color: const Color.fromRGBO(26, 26, 26, 1),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -161,39 +170,82 @@ class HabitCard extends StatelessWidget {
           SizedBox(
             height: sizeConfig.medium,
           ),
-          Column(
-            children: List.generate(threeWeeks.length, (windex) {
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(7, (index) {
-                  return Expanded(
-                    child: AspectRatio(
-                      aspectRatio: 1,
-                      child: Container(
-                        margin: const EdgeInsets.all(
-                          2,
-                        ),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isSameDate(
-                                    threeWeeks[windex][index], DateTime.now())
-                                ? colors[habit.color]
-                                : Colors.transparent,
-                            width: 1,
+          isGrid
+              ? Column(
+                  children: List.generate(threeWeeks.length, (windex) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: List.generate(7, (index) {
+                        return Expanded(
+                          child: AspectRatio(
+                            aspectRatio: 1,
+                            child: Container(
+                              margin: const EdgeInsets.all(
+                                2,
+                              ),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isSameDate(threeWeeks[windex][index],
+                                          DateTime.now())
+                                      ? colors[habit.color]
+                                      : Colors.transparent,
+                                  width: 1,
+                                ),
+                                color: habit.completedDays
+                                        .contains(threeWeeks[windex][index])
+                                    ? colors[habit.color]
+                                    : colors[habit.color].withOpacity(0.2),
+                              ),
+                            ),
                           ),
-                          color: habit.completedDays
-                                  .contains(threeWeeks[windex][index])
-                              ? colors[habit.color]
-                              : colors[habit.color].withOpacity(0.2),
+                        );
+                      }),
+                    );
+                  }),
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        reverse: true,
+                        child: Row(
+                          children:
+                              List.generate(lastYearWeeks.length, (windex) {
+                            return Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: List.generate(7, (index) {
+                                return Container(
+                                  margin: const EdgeInsets.all(
+                                    1,
+                                  ),
+                                  height: 14,
+                                  width: 14,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSameDate(
+                                              lastYearWeeks[windex][index],
+                                              DateTime.now())
+                                          ? colors[habit.color]
+                                          : Colors.transparent,
+                                      width: 1,
+                                    ),
+                                    color: habit.completedDays.contains(
+                                            lastYearWeeks[windex][index])
+                                        ? colors[habit.color]
+                                        : colors[habit.color].withOpacity(0.2),
+                                  ),
+                                );
+                              }),
+                            );
+                          }),
                         ),
                       ),
                     ),
-                  );
-                }),
-              );
-            }),
-          ),
+                  ],
+                ),
         ],
       ),
     );

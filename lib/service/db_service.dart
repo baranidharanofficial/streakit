@@ -33,15 +33,16 @@ class HabitDatabaseHelper {
     const intType = 'INTEGER NOT NULL';
 
     await db.execute('''
-      CREATE TABLE habits (
-        id $idType,
-        name $textType,
-        notes $textType,
-        icon $intType,
-        color $intType,
-        completed_days $textType
-      )
-    ''');
+    CREATE TABLE habits (
+      id $idType,
+      name $textType,
+      notes $textType,
+      icon $intType,
+      color $intType,
+      completed_days $textType NOT NULL,
+      order_index $intType NOT NULL DEFAULT 0 
+    )
+  ''');
   }
 
   Future<Habit> createHabit(Habit habit) async {
@@ -52,7 +53,7 @@ class HabitDatabaseHelper {
 
   Future<List<Habit>> readAllHabits() async {
     final db = await instance.database;
-    final result = await db.query('habits');
+    final result = await db.query('habits', orderBy: 'order_index');
     return result.map((map) => Habit.fromMap(map)).toList();
   }
 
@@ -85,6 +86,16 @@ class HabitDatabaseHelper {
     final db = await instance.database;
     return db.delete(
       'habits',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> updateHabitOrder(int id, int newOrderIndex) async {
+    final db = await instance.database;
+    await db.update(
+      'habits',
+      {'order_index': newOrderIndex},
       where: 'id = ?',
       whereArgs: [id],
     );

@@ -41,6 +41,7 @@ dependencies:
   rename: ^3.0.2
   shared_preferences: ^2.3.2
   animated_text_kit: ^4.2.2
+  animated_toggle_switch: ^0.8.3
 
 dev_dependencies:
   flutter_test:

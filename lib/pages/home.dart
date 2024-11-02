@@ -3,8 +3,10 @@ import 'package:streakit/constants.dart';
 import 'package:streakit/models/habit.dart';
 import 'package:streakit/pages/calendar.dart';
 import 'package:streakit/pages/notifications.dart';
+import 'package:streakit/pages/reorder.dart';
 import 'package:streakit/pages/update_habit.dart';
 import 'package:streakit/pages/new_habit.dart';
+import 'package:streakit/pages/widgets/custom_grid.dart';
 import 'package:streakit/pages/widgets/habit_card.dart';
 import 'package:streakit/service/db_service.dart';
 import 'package:streakit/service/utils.dart';
@@ -21,14 +23,16 @@ class _HomeScreenState extends State<HomeScreen> {
   late HabitDatabaseHelper _dbHelper;
   int habitCount = 0;
   List<Habit> habits = [];
-
   List<List<DateTime>> threeWeeks = [];
+  List<List<DateTime>> lastYearWeeks = [];
+  String cardView = "grid";
 
   @override
   void initState() {
     super.initState();
     _dbHelper = HabitDatabaseHelper.instance;
     threeWeeks = getLastThreeWeeks(DateTime.now());
+    lastYearWeeks = getLastYearWeeks(DateTime.now());
     _loadHabits();
   }
 
@@ -55,10 +59,22 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadHabits();
   }
 
+  String getTimeOfDay() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return "Morning";
+    } else if (hour < 18) {
+      return "Afternoon";
+    } else {
+      return "Evening";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     var width = MediaQuery.of(context).size.width;
     // var height = MediaQuery.of(context).size.height;
+    // bool positive = false;
     return Scaffold(
       backgroundColor: const Color(0xFF0E0E0E),
       floatingActionButton: FloatingActionButton(
@@ -109,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         Text(
-                          "Morning",
+                          getTimeOfDay(),
                           style: textConfig.whiteTitle,
                         )
                       ],
@@ -165,11 +181,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              //Today Progress
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
+                      //Today Progress
                       Container(
                         width: width,
                         margin: EdgeInsets.only(
@@ -177,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         padding: EdgeInsets.all(sizeConfig.large),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2B2B2B),
+                          color: const Color(0xFF1A1A1A),
                           borderRadius: BorderRadius.circular(
                             sizeConfig.large,
                           ),
@@ -260,18 +276,122 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       SizedBox(height: sizeConfig.xl),
 
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            width: 80,
+                            height: 30,
+                            margin: EdgeInsets.only(
+                              left: sizeConfig.xxs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2F2F2F),
+                              borderRadius: BorderRadius.circular(
+                                sizeConfig.xs,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      cardView = "grid";
+                                      setState(() {});
+                                    },
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: sizeConfig.xs,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: cardView == "grid"
+                                            ? Colors.white
+                                            : const Color(0xFF2C2C2C),
+                                        borderRadius: BorderRadius.only(
+                                          topLeft:
+                                              Radius.circular(sizeConfig.xs),
+                                          bottomLeft:
+                                              Radius.circular(sizeConfig.xs),
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.grid_view_rounded,
+                                          color: cardView == "grid"
+                                              ? Colors.black
+                                              : Colors.white,
+                                          size: sizeConfig.xl,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      cardView = "list";
+                                      setState(() {});
+                                    },
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: sizeConfig.xs,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: cardView == "list"
+                                            ? Colors.white
+                                            : const Color(0xFF2C2C2C),
+                                        borderRadius: BorderRadius.only(
+                                          topRight:
+                                              Radius.circular(sizeConfig.xs),
+                                          bottomRight:
+                                              Radius.circular(sizeConfig.xs),
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.table_rows_rounded,
+                                          color: cardView == "list"
+                                              ? Colors.black
+                                              : Colors.white,
+                                          size: sizeConfig.xl,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () async {
+                              bool? isUpdated = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ReorderHabits(),
+                                ),
+                              );
+
+                              if (isUpdated == true) {
+                                _loadHabits();
+                              }
+                            },
+                            icon: Icon(
+                              Icons.format_list_numbered_rounded,
+                              size: sizeConfig.xxl,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: sizeConfig.xl),
                       // Habits Grid View
-                      GridView.builder(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: sizeConfig.large,
-                          mainAxisSpacing: sizeConfig.large,
-                          childAspectRatio: 3 / 3.6,
-                        ),
-                        itemCount: habits.length,
+                      CustomGridView(
+                        crossAxisCount: cardView == "grid" ? 2 : 1,
+                        crossAxisSpacing: sizeConfig.large,
+                        length: habits.length,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index) {
+                        widgetOfIndex: (index) {
                           return GestureDetector(
                             onTap: () async {
                               await showModalBottomSheet(
@@ -310,6 +430,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: HabitCard(
                               habit: habits[index],
                               threeWeeks: threeWeeks,
+                              lastYearWeeks: lastYearWeeks,
+                              isGrid: cardView == "grid",
                               markHabitAsDone:
                                   (Habit habit, DateTime date) async {
                                 if (habit.completedDays.contains(date)) {
@@ -333,6 +455,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         },
                       ),
+                      SizedBox(
+                        height: sizeConfig.xxxxxl * 2,
+                      )
                     ],
                   ),
                 ),
@@ -361,6 +486,7 @@ class HabitBottomSheet extends StatefulWidget {
 }
 
 class _HabitBottomSheetState extends State<HabitBottomSheet> {
+  DateTime focusDay = DateTime.now();
   bool isCalendar = false;
 
   @override
@@ -417,7 +543,7 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                 children: [
                   GestureDetector(
                     onTap: () async {
-                      bool isUpdated = await Navigator.push(
+                      bool? isUpdated = await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => UpdateHabitScreen(
@@ -425,7 +551,7 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                           ),
                         ),
                       );
-                      if (isUpdated) {
+                      if (isUpdated != null && isUpdated) {
                         widget.onChange(null, null);
                       }
                       Navigator.pop(context);
@@ -488,7 +614,7 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                   calendarFormat: CalendarFormat.month,
                   firstDay: DateTime(2000),
                   lastDay: DateTime.now(),
-                  focusedDay: DateTime.now(),
+                  focusedDay: focusDay,
                   headerStyle: HeaderStyle(
                     formatButtonVisible: false,
                     titleCentered: true,
@@ -505,6 +631,7 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                     ),
                   ),
                   onDaySelected: (selectedDay, focusedDay) {
+                    focusDay = selectedDay;
                     print(selectedDay.toIso8601String());
                     widget.onChange(
                       widget.habit,
@@ -538,15 +665,16 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                               ),
                             ),
                             const SizedBox(height: 5),
-                            if (isCompleted)
-                              Container(
-                                width: 6,
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: colors[widget.habit.color],
-                                ),
-                              )
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isCompleted
+                                    ? colors[widget.habit.color]
+                                    : Colors.transparent,
+                              ),
+                            )
                           ],
                         ),
                       );
@@ -570,6 +698,42 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                               '${day.day}',
                               style: const TextStyle(
                                 color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isCompleted
+                                    ? colors[widget.habit.color]
+                                    : Colors.transparent,
+                              ),
+                            )
+                          ],
+                        ),
+                      );
+                    },
+                    outsideBuilder: (context, day, focusedDay) {
+                      // Check if this day has a completed task
+                      bool isCompleted =
+                          widget.habit.completedDays.contains(DateTime(
+                        day.year,
+                        day.month,
+                        day.day,
+                      ));
+
+                      print(isCompleted);
+
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '${day.day}',
+                              style: const TextStyle(
+                                color: Color(0xFF8E8E8E),
                               ),
                             ),
                             const SizedBox(height: 5),
@@ -651,15 +815,15 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                                 margin: const EdgeInsets.all(
                                   2,
                                 ),
-                                height: 18,
-                                width: 18,
+                                height: 20,
+                                width: 20,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: widget.habit.completedDays.contains(
                                           widget.lastYearWeeks[windex][index])
                                       ? colors[widget.habit.color]
                                       : colors[widget.habit.color]
-                                          .withOpacity(0.5),
+                                          .withOpacity(0.2),
                                 ),
                               );
                             }),
@@ -703,13 +867,21 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.check_circle_outline,
-                  color: colors[widget.habit.color],
-                ),
-                SizedBox(
-                  width: sizeConfig.xs,
-                ),
+                if (!widget.habit.completedDays.contains(DateTime(
+                    DateTime.now().year,
+                    DateTime.now().month,
+                    DateTime.now().day)))
+                  Icon(
+                    Icons.check_circle_outline,
+                    color: colors[widget.habit.color],
+                  ),
+                if (!widget.habit.completedDays.contains(DateTime(
+                    DateTime.now().year,
+                    DateTime.now().month,
+                    DateTime.now().day)))
+                  SizedBox(
+                    width: sizeConfig.xs,
+                  ),
                 Text(
                   widget.habit.completedDays.contains(DateTime(
                           DateTime.now().year,
