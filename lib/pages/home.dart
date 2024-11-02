@@ -721,14 +721,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ],
                                         ),
                                       ),
-                                      IconButton(
+                                      IconButton.filled(
                                         style: IconButton.styleFrom(
                                           visualDensity: VisualDensity.compact,
                                           padding: EdgeInsets.zero,
+                                          backgroundColor:
+                                              const Color(0xFF272727),
                                         ),
                                         onPressed: () async {
-                                          bool? isUpdated =
-                                              await Navigator.push(
+                                          await Navigator.push(
                                             context,
                                             MaterialPageRoute(
                                               builder: (context) =>
@@ -736,9 +737,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             ),
                                           );
 
-                                          if (isUpdated == true) {
-                                            _loadHabits();
-                                          }
+                                          _loadHabits();
                                         },
                                         icon: Icon(
                                           Icons.format_list_numbered_rounded,
