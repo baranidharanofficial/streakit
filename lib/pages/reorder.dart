@@ -4,8 +4,10 @@ import 'package:streakit/models/habit.dart';
 import 'package:streakit/service/db_service.dart';
 
 class ReorderHabits extends StatefulWidget {
+  const ReorderHabits({super.key});
+
   @override
-  _ReorderHabitsState createState() => _ReorderHabitsState();
+  State<ReorderHabits> createState() => _ReorderHabitsState();
 }
 
 class _ReorderHabitsState extends State<ReorderHabits> {

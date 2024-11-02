@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Habit {
   final int? id;
   final String name;
@@ -65,6 +67,23 @@ class Habit {
       color: color ?? this.color,
       completedDays: completedDays ?? this.completedDays,
       orderIndex: orderIndex ?? this.orderIndex,
+    );
+  }
+}
+
+class NotificationMessage {
+  final String message;
+  final DateTime createdAt;
+
+  NotificationMessage({
+    required this.message,
+    required this.createdAt,
+  });
+
+  factory NotificationMessage.fromMap(Map<String, dynamic> data) {
+    return NotificationMessage(
+      message: data['message'] as String,
+      createdAt: (data['created_at'] as Timestamp).toDate(),
     );
   }
 }

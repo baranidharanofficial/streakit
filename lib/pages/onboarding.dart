@@ -105,7 +105,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ),
                         ],
                         onTap: () {
-                          print("Tap Event");
+                          debugPrint("Tap Event");
                         },
                       ),
                     ],

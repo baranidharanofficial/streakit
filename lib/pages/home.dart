@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'dart:ui';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:streakit/constants.dart';
 import 'package:streakit/models/habit.dart';
-import 'package:streakit/pages/calendar.dart';
 import 'package:streakit/pages/notifications.dart';
 import 'package:streakit/pages/reorder.dart';
 import 'package:streakit/pages/update_habit.dart';
@@ -13,6 +15,7 @@ import 'package:streakit/pages/widgets/habit_card.dart';
 import 'package:streakit/service/db_service.dart';
 import 'package:streakit/service/utils.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,6 +31,9 @@ class _HomeScreenState extends State<HomeScreen> {
   List<List<DateTime>> threeWeeks = [];
   List<List<DateTime>> lastYearWeeks = [];
   String cardView = "grid";
+  bool isUpdateAvailable = false;
+  bool isCalendar = false;
+  DateTime focusDay = DateTime.now();
 
   @override
   void initState() {
@@ -36,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
     threeWeeks = getLastThreeWeeks(DateTime.now());
     lastYearWeeks = getLastYearWeeks(DateTime.now());
     _loadHabits();
+    fetchVersionCollection();
   }
 
   Future<void> _loadHabits() async {
@@ -69,6 +76,30 @@ class _HomeScreenState extends State<HomeScreen> {
       return "Afternoon";
     } else {
       return "Evening";
+    }
+  }
+
+  Future<void> fetchVersionCollection() async {
+    try {
+      CollectionReference versionCollection =
+          FirebaseFirestore.instance.collection('version');
+      QuerySnapshot snapshot = await versionCollection.get();
+      List<Map<String, dynamic>> versions = snapshot.docs.map((doc) {
+        return doc.data() as Map<String, dynamic>;
+      }).toList();
+      debugPrint(versions[0]['version'].toString());
+
+      if (versions[0]['version'] > version) {
+        isUpdateAvailable = true;
+      }
+
+      if (versions.isNotEmpty) {
+        iosLink = versions[0]['ios_link'];
+        androidLink = versions[0]['android_link'];
+      }
+      setState(() {});
+    } catch (e) {
+      debugPrint("Error fetching version collection: $e");
     }
   }
 
@@ -133,15 +164,15 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const SizedBox(),
             ),
           ),
-          Padding(
+          Container(
             padding: EdgeInsets.symmetric(
               horizontal: sizeConfig.large,
             ),
-            child: Column(
-              children: [
-                // App Bar
-                SafeArea(
-                  child: Row(
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // App Bar
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
@@ -185,22 +216,26 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           IconButton.filled(
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const CalendarScreen(),
-                                ),
-                              );
+                              isCalendar = !isCalendar;
+                              setState(() {});
+                              // Navigator.push(
+                              //   context,
+                              //   MaterialPageRoute(
+                              //     builder: (context) => const CalendarScreen(),
+                              //   ),
+                              // );
                             },
                             style: IconButton.styleFrom(
-                              backgroundColor: const Color(0xFF222222),
+                              backgroundColor: isCalendar
+                                  ? Colors.white
+                                  : const Color(0xFF222222),
                               padding: EdgeInsets.all(
                                 sizeConfig.xs,
                               ),
                             ),
                             icon: Icon(
                               Icons.calendar_month_outlined,
-                              color: Colors.white,
+                              color: isCalendar ? Colors.black : Colors.white,
                               size: sizeConfig.xxxl,
                             ),
                           ),
@@ -208,366 +243,712 @@ class _HomeScreenState extends State<HomeScreen> {
                       )
                     ],
                   ),
-                ),
-
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.zero,
-                    child: Column(
-                      children: [
-                        //Today Progress
-                        Container(
-                          width: width,
-                          padding: EdgeInsets.all(
-                            sizeConfig.large,
+                  SizedBox(
+                    height: sizeConfig.xl,
+                  ),
+                  if (isUpdateAvailable)
+                    Container(
+                      margin: EdgeInsets.only(
+                        bottom: sizeConfig.large,
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: sizeConfig.xl,
+                        vertical: sizeConfig.xl,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(
+                          sizeConfig.xxxl,
+                        ),
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.green.withOpacity(0.5),
+                            Colors.orange.withOpacity(0.5),
+                          ],
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "New version is available",
+                            style: textConfig.whiteLarge,
                           ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF262626),
-                            // gradient: const LinearGradient(
-                            //   colors: [
-                            //     Color(0x2EA7FF6D),
-                            //     Color(0x56FFAE34),
-                            //   ],
-                            // ),
-                            borderRadius: BorderRadius.circular(
-                              sizeConfig.large,
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  sizeConfig.large,
+                                ),
+                              ),
+                            ),
+                            onPressed: () async {
+                              if (Platform.isAndroid &&
+                                  !await launchUrl(Uri.parse(androidLink))) {
+                                throw Exception(
+                                  'Could not launch $androidLink',
+                                );
+                              }
+
+                              if (Platform.isIOS &&
+                                  !await launchUrl(Uri.parse(iosLink))) {
+                                throw Exception(
+                                  'Could not launch $androidLink',
+                                );
+                              }
+                            },
+                            child: Text(
+                              "Update",
+                              style: textConfig.large,
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                  if (isCalendar)
+                    Expanded(
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            height: sizeConfig.xxs,
+                          ),
+                          TableCalendar(
+                            focusedDay: focusDay,
+                            firstDay: DateTime(2000),
+                            lastDay: DateTime(3000),
+                            headerVisible: true,
+                            daysOfWeekVisible: false,
+                            rowHeight: 80,
+                            daysOfWeekStyle: DaysOfWeekStyle(
+                              weekdayStyle: textConfig.whiteMedium,
+                              weekendStyle: textConfig.whiteMedium,
+                            ),
+                            headerStyle: HeaderStyle(
+                              formatButtonVisible: false,
+                              titleCentered: false,
+                              titleTextStyle: textConfig.whiteLarge,
+                              leftChevronVisible: false,
+                              rightChevronVisible: false,
+                              headerPadding: EdgeInsets.symmetric(
+                                horizontal: sizeConfig.xxs,
+                                vertical: sizeConfig.xs,
+                              ),
+                            ),
+                            calendarFormat: CalendarFormat.week,
+                            onDaySelected: (selectedDay, focusedDay) {
+                              focusDay = selectedDay;
+                              debugPrint(selectedDay.toIso8601String());
+                              setState(() {});
+                            },
+                            calendarBuilders: CalendarBuilders(
+                              todayBuilder: (context, day, focusedDay) {
+                                bool isCompleted = isSameDate(
+                                  day,
+                                  DateTime(
+                                    focusedDay.year,
+                                    focusedDay.month,
+                                    focusedDay.day,
+                                  ),
+                                );
+                                return DateWidget(
+                                  isCompleted: isCompleted,
+                                  day: day,
+                                );
+                              },
+                              defaultBuilder: (context, day, focusedDay) {
+                                bool isCompleted = isSameDate(
+                                  day,
+                                  DateTime(
+                                    focusedDay.year,
+                                    focusedDay.month,
+                                    focusedDay.day,
+                                  ),
+                                );
+
+                                return DateWidget(
+                                  isCompleted: isCompleted,
+                                  day: day,
+                                );
+                              },
+                              outsideBuilder: (context, day, focusedDay) {
+                                bool isCompleted = isSameDate(
+                                  day,
+                                  DateTime(
+                                    focusedDay.year,
+                                    focusedDay.month,
+                                    focusedDay.day,
+                                  ),
+                                );
+                                return DateWidget(
+                                  isCompleted: isCompleted,
+                                  day: day,
+                                );
+                              },
                             ),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: EdgeInsets.only(left: sizeConfig.xxs),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      getFormattedDate(),
-                                      style: textConfig.greyLarge.copyWith(),
-                                    ),
-                                    Text(
-                                      "Today's Progress",
-                                      style: textConfig.whiteTitle,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(
-                                height: sizeConfig.large,
-                              ),
-                              Text(
-                                "${habitCount > 0 ? ((habitCount / habits.length) * 100).toInt() : 0}%",
-                                style: textConfig.whiteTitle.copyWith(
-                                  fontSize: sizeConfig.xxxxl * 2,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.only(left: sizeConfig.xs),
-                                child: Text(
-                                  "$habitCount / ${habits.length} Habits",
-                                  style: textConfig.greyLarge.copyWith(),
-                                ),
-                              ),
-                              SizedBox(
-                                height: sizeConfig.xs,
-                              ),
-                              Padding(
-                                padding: EdgeInsets.only(right: sizeConfig.xs),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: List.generate(10, (index) {
-                                    // Calculate how many circles to highlight based on the percentage
-                                    int highlightedCircles = habitCount > 0
-                                        ? (((habitCount / habits.length) * 100)
-                                                    .toInt() /
-                                                10)
-                                            .ceil()
-                                        : 0; // Divide percentage by 10 to get the number of circles
-
-                                    return Expanded(
-                                      child: AspectRatio(
-                                        aspectRatio: 1,
-                                        child: Container(
-                                          margin: const EdgeInsets.all(2),
-                                          // Add margin for spacing
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: index < highlightedCircles
-                                                ? Colors
-                                                    .green // Highlighted circles
-                                                : Colors.green.withOpacity(
-                                                    0.2), // Unhighlighted circles
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }),
-                                ),
-                              )
-                            ],
+                          SizedBox(
+                            height: sizeConfig.xxl,
                           ),
-                        ),
-
-                        // Habits Grid View
-                        if (habits.isNotEmpty)
-                          Column(
-                            children: [
-                              SizedBox(height: sizeConfig.xl),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Container(
-                                    width: 80,
-                                    height: 30,
-                                    margin: EdgeInsets.only(
-                                      left: sizeConfig.xxs,
+                          Expanded(
+                            child: ListView.separated(
+                              itemCount: habits.length,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              separatorBuilder: (context, index) {
+                                return SizedBox(
+                                  height: sizeConfig.medium,
+                                );
+                              },
+                              itemBuilder: (context, index) {
+                                return Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: sizeConfig.xl,
+                                    vertical: sizeConfig.large,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF282828),
+                                    borderRadius: BorderRadius.circular(
+                                      sizeConfig.xs,
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF2F2F2F),
-                                      borderRadius: BorderRadius.circular(
-                                        sizeConfig.xs,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          HugeIcon(
+                                            icon: icons[habits[index].icon],
+                                            color: colors[habits[index].color],
+                                          ),
+                                          SizedBox(
+                                            width: sizeConfig.small,
+                                          ),
+                                          Text(
+                                            habits[index].name,
+                                            style: textConfig.whiteLarge,
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              cardView = "grid";
-                                              setState(() {});
-                                            },
-                                            child: Container(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: sizeConfig.xs,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: cardView == "grid"
-                                                    ? Colors.white
-                                                    : const Color(0xFF2C2C2C),
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                  sizeConfig.xs,
+                                      GestureDetector(
+                                        onTap: () async {
+                                          if (habits[index]
+                                              .completedDays
+                                              .contains(
+                                                DateTime(
+                                                  focusDay.year,
+                                                  focusDay.month,
+                                                  focusDay.day,
                                                 ),
+                                              )) {
+                                            habits[index].completedDays =
+                                                habits[index]
+                                                    .completedDays
+                                                    .where(
+                                                      (cdate) =>
+                                                          cdate !=
+                                                          DateTime(
+                                                            focusDay.year,
+                                                            focusDay.month,
+                                                            focusDay.day,
+                                                          ),
+                                                    )
+                                                    .toList();
+                                          } else {
+                                            habits[index].completedDays = [
+                                              ...habits[index].completedDays,
+                                              DateTime(
+                                                focusDay.year,
+                                                focusDay.month,
+                                                focusDay.day,
                                               ),
-                                              child: Center(
-                                                child: Icon(
-                                                  Icons.grid_view_rounded,
-                                                  color: cardView == "grid"
-                                                      ? Colors.black
-                                                      : Colors.white,
-                                                  size: sizeConfig.xl,
-                                                ),
-                                              ),
+                                            ];
+                                          }
+                                          await _dbHelper
+                                              .updateHabit(habits[index]);
+                                          _loadHabits();
+                                        },
+                                        child: Container(
+                                          height: sizeConfig.xxxxl,
+                                          width: sizeConfig.xxxxl,
+                                          decoration: BoxDecoration(
+                                            color: habits[index]
+                                                    .completedDays
+                                                    .contains(
+                                                      DateTime(
+                                                        focusDay.year,
+                                                        focusDay.month,
+                                                        focusDay.day,
+                                                      ),
+                                                    )
+                                                ? colors[habits[index].color]
+                                                : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(
+                                              sizeConfig.xxxxxl,
+                                            ),
+                                            border: Border.all(
+                                              width: 1,
+                                              color: habits[index]
+                                                      .completedDays
+                                                      .contains(
+                                                        DateTime(
+                                                          focusDay.year,
+                                                          focusDay.month,
+                                                          focusDay.day,
+                                                        ),
+                                                      )
+                                                  ? colors[habits[index].color]
+                                                  : Colors.white,
                                             ),
                                           ),
+                                          child: habits[index]
+                                                  .completedDays
+                                                  .contains(
+                                                    DateTime(
+                                                      focusDay.year,
+                                                      focusDay.month,
+                                                      focusDay.day,
+                                                    ),
+                                                  )
+                                              ? const Center(
+                                                  child: Icon(
+                                                    Icons.check,
+                                                    color: Colors.white,
+                                                  ),
+                                                )
+                                              : const SizedBox(),
                                         ),
-                                        Expanded(
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              cardView = "list";
-                                              setState(() {});
-                                            },
-                                            child: Container(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: sizeConfig.xs,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: cardView == "list"
-                                                    ? Colors.white
-                                                    : const Color(0xFF2C2C2C),
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                  sizeConfig.xs,
-                                                ),
-                                              ),
-                                              child: Center(
-                                                child: Icon(
-                                                  Icons.table_rows_rounded,
-                                                  color: cardView == "list"
-                                                      ? Colors.black
-                                                      : Colors.white,
-                                                  size: sizeConfig.xl,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (!isCalendar)
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.zero,
+                        child: Column(
+                          children: [
+                            //Today Progress
+                            Container(
+                              width: width,
+                              padding: EdgeInsets.all(
+                                sizeConfig.large,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF262626),
+                                borderRadius: BorderRadius.circular(
+                                  sizeConfig.xxxl,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding:
+                                        EdgeInsets.only(left: sizeConfig.xxs),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          getFormattedDate(),
+                                          style:
+                                              textConfig.greyLarge.copyWith(),
+                                        ),
+                                        Text(
+                                          "Today's Progress",
+                                          style: textConfig.whiteTitle,
                                         ),
                                       ],
                                     ),
-                                  ),
-                                  IconButton(
-                                    style: IconButton.styleFrom(
-                                      visualDensity: VisualDensity.compact,
-                                      padding: EdgeInsets.zero,
-                                    ),
-                                    onPressed: () async {
-                                      bool? isUpdated = await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ReorderHabits(),
-                                        ),
-                                      );
-
-                                      if (isUpdated == true) {
-                                        _loadHabits();
-                                      }
-                                    },
-                                    icon: Icon(
-                                      Icons.format_list_numbered_rounded,
-                                      size: sizeConfig.xxl,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              CustomGridView(
-                                crossAxisCount: cardView == "grid" ? 2 : 1,
-                                crossAxisSpacing: sizeConfig.large,
-                                length: habits.length,
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                widgetOfIndex: (index) {
-                                  return GestureDetector(
-                                    onTap: () async {
-                                      await showModalBottomSheet(
-                                        context: context,
-                                        isScrollControlled: true,
-                                        builder: (context) {
-                                          return HabitBottomSheet(
-                                            onDelete: (Habit? habit) async {
-                                              if (habit != null) {
-                                                await _dbHelper
-                                                    .deleteHabit(habit.id!);
-
-                                                _loadHabits();
-                                              }
-                                            },
-                                            onChange: (Habit? habit,
-                                                DateTime? date) async {
-                                              if (habit != null &&
-                                                  date != null) {
-                                                if (habit.completedDays
-                                                    .contains(date)) {
-                                                  habit.completedDays = habit
-                                                      .completedDays
-                                                      .where((cdate) =>
-                                                          cdate != date)
-                                                      .toList();
-                                                } else {
-                                                  habit.completedDays = [
-                                                    ...habit.completedDays,
-                                                    date,
-                                                  ];
-                                                }
-                                                await _dbHelper
-                                                    .updateHabit(habit);
-                                              }
-
-                                              _loadHabits();
-                                            },
-                                            lastYearWeeks: getLastYearWeeks(
-                                              DateTime.now(),
-                                            ),
-                                            habit: habits[index],
-                                          );
-                                        },
-                                      );
-                                    },
-                                    child: HabitCard(
-                                      habit: habits[index],
-                                      threeWeeks: threeWeeks,
-                                      lastYearWeeks: lastYearWeeks,
-                                      isGrid: cardView == "grid",
-                                      markHabitAsDone:
-                                          (Habit habit, DateTime date) async {
-                                        if (habit.completedDays
-                                            .contains(date)) {
-                                          habit.completedDays = habit
-                                              .completedDays
-                                              .where((cdate) => cdate != date)
-                                              .toList();
-                                        } else {
-                                          habit.completedDays = [
-                                            ...habit.completedDays,
-                                            date,
-                                          ];
-                                        }
-                                        await _dbHelper.updateHabit(habit);
-                                        _loadHabits();
-                                      },
-                                      deleteHabit: (Habit habit) {
-                                        _deleteHabit(habit.id!);
-                                        _loadHabits();
-                                      },
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-
-                        if (habits.isEmpty)
-                          SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.4,
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Image.asset(
-                                    "assets/Empty.gif",
-                                    height: 100,
-                                    width: 100,
                                   ),
                                   SizedBox(
                                     height: sizeConfig.large,
                                   ),
                                   Text(
-                                    "No Habits Created yet",
-                                    style: textConfig.whiteLarge,
+                                    "${habitCount > 0 ? ((habitCount / habits.length) * 100).toInt() : 0}%",
+                                    style: textConfig.whiteTitle.copyWith(
+                                      fontSize: sizeConfig.xxxxl * 2,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding:
+                                        EdgeInsets.only(left: sizeConfig.xs),
+                                    child: Text(
+                                      "$habitCount / ${habits.length} Habits",
+                                      style: textConfig.greyLarge.copyWith(),
+                                    ),
                                   ),
                                   SizedBox(
-                                    height: sizeConfig.xl,
+                                    height: sizeConfig.xs,
                                   ),
-                                  FilledButton(
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                    ),
-                                    onPressed: () async {
-                                      bool? habitAdded = await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                const NewHabitScreen()),
-                                      );
+                                  Padding(
+                                    padding:
+                                        EdgeInsets.only(right: sizeConfig.xs),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: List.generate(10, (index) {
+                                        // Calculate how many circles to highlight based on the percentage
+                                        int highlightedCircles = habitCount > 0
+                                            ? (((habitCount / habits.length) *
+                                                            100)
+                                                        .toInt() /
+                                                    10)
+                                                .ceil()
+                                            : 0; // Divide percentage by 10 to get the number of circles
 
-                                      // If a habit was added, reload the list
-                                      if (habitAdded == true) {
-                                        _loadHabits(); // Refresh the habit list
-                                      }
-                                    },
-                                    child: Text(
-                                      "Add Habit",
-                                      style: textConfig.large,
+                                        return Expanded(
+                                          child: AspectRatio(
+                                            aspectRatio: 1,
+                                            child: Container(
+                                              margin: const EdgeInsets.all(2),
+                                              // Add margin for spacing
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: index <
+                                                        highlightedCircles
+                                                    ? Colors
+                                                        .green // Highlighted circles
+                                                    : Colors.green.withOpacity(
+                                                        0.2), // Unhighlighted circles
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }),
                                     ),
                                   )
                                 ],
                               ),
                             ),
-                          ),
-                        SizedBox(
-                          height: sizeConfig.xxxxxl * 2,
-                        )
-                      ],
+
+                            // Habits Grid View
+                            if (habits.isNotEmpty)
+                              Column(
+                                children: [
+                                  SizedBox(height: sizeConfig.xl),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Container(
+                                        width: 80,
+                                        height: 30,
+                                        margin: EdgeInsets.only(
+                                          left: sizeConfig.xxs,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF2F2F2F),
+                                          borderRadius: BorderRadius.circular(
+                                            sizeConfig.xs,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  cardView = "grid";
+                                                  setState(() {});
+                                                },
+                                                child: Container(
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: sizeConfig.xs,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: cardView == "grid"
+                                                        ? Colors.white
+                                                        : const Color(
+                                                            0xFF2C2C2C),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                      sizeConfig.xs,
+                                                    ),
+                                                  ),
+                                                  child: Center(
+                                                    child: Icon(
+                                                      Icons.grid_view_rounded,
+                                                      color: cardView == "grid"
+                                                          ? Colors.black
+                                                          : Colors.white,
+                                                      size: sizeConfig.xl,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  cardView = "list";
+                                                  setState(() {});
+                                                },
+                                                child: Container(
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: sizeConfig.xs,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: cardView == "list"
+                                                        ? Colors.white
+                                                        : const Color(
+                                                            0xFF2C2C2C),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                      sizeConfig.xs,
+                                                    ),
+                                                  ),
+                                                  child: Center(
+                                                    child: Icon(
+                                                      Icons.table_rows_rounded,
+                                                      color: cardView == "list"
+                                                          ? Colors.black
+                                                          : Colors.white,
+                                                      size: sizeConfig.xl,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      IconButton(
+                                        style: IconButton.styleFrom(
+                                          visualDensity: VisualDensity.compact,
+                                          padding: EdgeInsets.zero,
+                                        ),
+                                        onPressed: () async {
+                                          bool? isUpdated =
+                                              await Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const ReorderHabits(),
+                                            ),
+                                          );
+
+                                          if (isUpdated == true) {
+                                            _loadHabits();
+                                          }
+                                        },
+                                        icon: Icon(
+                                          Icons.format_list_numbered_rounded,
+                                          size: sizeConfig.xxl,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  CustomGridView(
+                                    crossAxisCount: cardView == "grid" ? 2 : 1,
+                                    crossAxisSpacing: sizeConfig.large,
+                                    length: habits.length,
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    widgetOfIndex: (index) {
+                                      return GestureDetector(
+                                        onTap: () async {
+                                          await showModalBottomSheet(
+                                            context: context,
+                                            isScrollControlled: true,
+                                            builder: (context) {
+                                              return HabitBottomSheet(
+                                                onDelete: (Habit? habit) async {
+                                                  if (habit != null) {
+                                                    await _dbHelper
+                                                        .deleteHabit(habit.id!);
+
+                                                    _loadHabits();
+                                                  }
+                                                },
+                                                onChange: (Habit? habit,
+                                                    DateTime? date) async {
+                                                  if (habit != null &&
+                                                      date != null) {
+                                                    if (habit.completedDays
+                                                        .contains(date)) {
+                                                      habit.completedDays =
+                                                          habit.completedDays
+                                                              .where((cdate) =>
+                                                                  cdate != date)
+                                                              .toList();
+                                                    } else {
+                                                      habit.completedDays = [
+                                                        ...habit.completedDays,
+                                                        date,
+                                                      ];
+                                                    }
+                                                    await _dbHelper
+                                                        .updateHabit(habit);
+                                                  }
+
+                                                  _loadHabits();
+                                                },
+                                                lastYearWeeks: getLastYearWeeks(
+                                                  DateTime.now(),
+                                                ),
+                                                habit: habits[index],
+                                              );
+                                            },
+                                          );
+                                        },
+                                        child: HabitCard(
+                                          habit: habits[index],
+                                          threeWeeks: threeWeeks,
+                                          lastYearWeeks: lastYearWeeks,
+                                          isGrid: cardView == "grid",
+                                          markHabitAsDone: (Habit habit,
+                                              DateTime date) async {
+                                            if (habit.completedDays
+                                                .contains(date)) {
+                                              habit.completedDays = habit
+                                                  .completedDays
+                                                  .where(
+                                                      (cdate) => cdate != date)
+                                                  .toList();
+                                            } else {
+                                              habit.completedDays = [
+                                                ...habit.completedDays,
+                                                date,
+                                              ];
+                                            }
+                                            await _dbHelper.updateHabit(habit);
+                                            _loadHabits();
+                                          },
+                                          deleteHabit: (Habit habit) {
+                                            _deleteHabit(habit.id!);
+                                            _loadHabits();
+                                          },
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+
+                            if (habits.isEmpty)
+                              SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.4,
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Image.asset(
+                                        "assets/Empty.gif",
+                                        height: 100,
+                                        width: 100,
+                                      ),
+                                      SizedBox(
+                                        height: sizeConfig.large,
+                                      ),
+                                      Text(
+                                        "No Habits Created yet",
+                                        style: textConfig.whiteLarge,
+                                      ),
+                                      SizedBox(
+                                        height: sizeConfig.xl,
+                                      ),
+                                      FilledButton(
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              sizeConfig.large,
+                                            ),
+                                          ),
+                                        ),
+                                        onPressed: () async {
+                                          bool? habitAdded =
+                                              await Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const NewHabitScreen()),
+                                          );
+
+                                          // If a habit was added, reload the list
+                                          if (habitAdded == true) {
+                                            _loadHabits(); // Refresh the habit list
+                                          }
+                                        },
+                                        child: Text(
+                                          "Add Habit",
+                                          style: textConfig.large,
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            SizedBox(
+                              height: sizeConfig.xxxxxl * 2,
+                            )
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class DateWidget extends StatelessWidget {
+  const DateWidget({
+    super.key,
+    required this.day,
+    required this.isCompleted,
+  });
+
+  final DateTime day;
+  final bool isCompleted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(
+        top: sizeConfig.xs,
+      ),
+      height: 100,
+      decoration: BoxDecoration(
+        color: isCompleted ? Colors.white : Colors.transparent,
+        borderRadius: BorderRadius.circular(
+          sizeConfig.large,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              getWeekdayName(day.weekday).toUpperCase(),
+              style: isCompleted
+                  ? textConfig.medium.copyWith(
+                      fontWeight: FontWeight.w500,
+                    )
+                  : textConfig.whiteMedium,
+            ),
+            Text(
+              '${day.day}',
+              style: isCompleted ? textConfig.title : textConfig.whiteTitle,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -858,7 +1239,7 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                   ),
                   onDaySelected: (selectedDay, focusedDay) {
                     focusDay = selectedDay;
-                    print(selectedDay.toIso8601String());
+                    debugPrint(selectedDay.toIso8601String());
                     widget.onChange(
                       widget.habit,
                       DateTime(
@@ -878,7 +1259,7 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                         focusedDay.day,
                       ));
 
-                      print(isCompleted);
+                      debugPrint(isCompleted.toString());
 
                       return Center(
                         child: Column(
@@ -914,7 +1295,7 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                         day.day,
                       ));
 
-                      print(isCompleted);
+                      debugPrint(isCompleted.toString());
 
                       return Center(
                         child: Column(
@@ -950,7 +1331,7 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                         day.day,
                       ));
 
-                      print(isCompleted);
+                      debugPrint(isCompleted.toString());
 
                       return Center(
                         child: Column(

@@ -9,6 +9,11 @@ String getFormattedDate() {
   return dateFormat.format(today);
 }
 
+String formatDate(DateTime date) {
+  DateFormat dateFormat = DateFormat("dd MMM, yyyy");
+  return dateFormat.format(date);
+}
+
 void showSnackBar(String message) {
   final snackBar = SnackBar(
     content: Row(
@@ -102,4 +107,13 @@ bool isSameDate(DateTime date1, DateTime date2) {
   return date1.year == date2.year &&
       date1.month == date2.month &&
       date1.day == date2.day;
+}
+
+String getWeekdayName(int day) {
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  if (day >= 1 && day <= 7) {
+    return days[day - 1];
+  } else {
+    return "Invalid day";
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:streakit/constants.dart';
 import 'package:streakit/models/habit.dart';
 import 'package:streakit/service/utils.dart';
@@ -24,15 +25,18 @@ class HabitCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(sizeConfig.large),
+      padding: EdgeInsets.symmetric(
+        vertical: sizeConfig.large,
+        horizontal: sizeConfig.xl,
+      ),
       margin: EdgeInsets.only(
         bottom: sizeConfig.large,
       ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(
-          sizeConfig.large,
+          sizeConfig.xxxl,
         ),
-        color: const Color(0xFF262626),
+        color: const Color(0xFF2E2E2E),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -44,8 +48,8 @@ class HabitCard extends StatelessWidget {
               Expanded(
                 child: Row(
                   children: [
-                    Icon(
-                      icons[habit.icon],
+                    HugeIcon(
+                      icon: icons[habit.icon],
                       color: colors[habit.color],
                       size: sizeConfig.xxxl,
                     ),
@@ -220,8 +224,8 @@ class HabitCard extends StatelessWidget {
                                   margin: const EdgeInsets.all(
                                     1,
                                   ),
-                                  height: 14,
-                                  width: 14,
+                                  height: sizeConfig.small,
+                                  width: sizeConfig.small,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(

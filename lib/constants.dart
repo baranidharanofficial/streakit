@@ -1,24 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 const String fontFamily = 'Montserrat';
 const String appVersion = '1.0.0';
+const int version = 3;
+
+String iosLink = "";
+String androidLink = "";
 
 List<IconData> icons = [
-  Icons.access_alarm,
-  Icons.run_circle_outlined,
-  Icons.payment_outlined,
-  Icons.favorite_outline_rounded,
-  Icons.eco_outlined,
-  Icons.book_outlined,
+  HugeIcons.strokeRoundedAlarmClock,
+  HugeIcons.strokeRoundedWallet01,
+  HugeIcons.strokeRoundedBathtub01,
+  HugeIcons.strokeRoundedFavourite,
+  HugeIcons.strokeRoundedWorkoutRun,
+  HugeIcons.strokeRoundedBook02,
+  HugeIcons.strokeRoundedApple,
+  HugeIcons.strokeRoundedPaintBoard,
+  HugeIcons.strokeRoundedMusicNote01,
+  HugeIcons.strokeRoundedCoffeeBeans,
+  HugeIcons.strokeRoundedJoystick05,
+  HugeIcons.strokeRoundedBicycle,
+  HugeIcons.strokeRoundedCodeSquare,
+  HugeIcons.strokeRoundedBed,
+  HugeIcons.strokeRoundedPencilEdit01,
+  HugeIcons.strokeRoundedAirplane01,
+  HugeIcons.strokeRoundedYoga01,
+  HugeIcons.strokeRoundedCar03,
 ];
 
 List<Color> colors = [
   const Color(0xFFFF3030),
   const Color(0xFFAD26D6),
   const Color(0xFF4949FF),
-  const Color(0xFFEDAE00),
-  const Color(0xFF39CE48),
-  const Color(0xFFFF8000),
+  const Color(0xFFFFBB00),
+  const Color(0xFF79DC00),
+  const Color(0xFFD16900),
+  const Color(0xFF00B6B3),
+  const Color(0xFF28A92A),
+  const Color(0xFF249685),
+  const Color(0xFFE331DE),
+  const Color(0xFF6E6EFF),
+  const Color(0xFF1091E7),
+  const Color(0xFF9BAC00),
+  const Color(0xFF832AE2),
+  const Color(0xFF7D7D7D),
+  const Color(0xFF1B6CDE),
+  const Color(0xFFCE3992),
+  const Color(0xFF238EFF),
 ];
 
 ButtonStyle buttonStyle = FilledButton.styleFrom(
