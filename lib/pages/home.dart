@@ -1257,7 +1257,7 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                   GestureDetector(
                     onTap: () async {
                       bool? isUpdated = await context.push(
-                        'update-habit',
+                        '/update-habit',
                         extra: widget.habit,
                       );
 
