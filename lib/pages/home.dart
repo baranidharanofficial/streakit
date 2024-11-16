@@ -1091,7 +1091,7 @@ class HabitBottomSheet extends StatefulWidget {
 
 class _HabitBottomSheetState extends State<HabitBottomSheet> {
   DateTime focusDay = DateTime.now();
-  bool isCalendar = false;
+  bool isCalendar = true;
 
   @override
   Widget build(BuildContext context) {
@@ -1353,7 +1353,28 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                     );
                     setState(() {});
                   },
+                  onDisabledDayTapped: (day) {
+                    print(day.toIso8601String());
+                  },
                   calendarBuilders: CalendarBuilders(
+                    disabledBuilder: (context, day, focusedDay) {
+                      return Container(
+                        width: sizeConfig.xxxxl,
+                        height: sizeConfig.xxxxl,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.transparent,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${day.day}',
+                            style: const TextStyle(
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                     todayBuilder: (context, day, focusedDay) {
                       bool isCompleted =
                           widget.habit.completedDays.contains(DateTime(
@@ -1364,28 +1385,22 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
 
                       debugPrint(isCompleted.toString());
 
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              '${day.day}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                              ),
+                      return Container(
+                        width: sizeConfig.xxxxl,
+                        height: sizeConfig.xxxxl,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isCompleted
+                              ? colors[widget.habit.color]
+                              : Colors.transparent,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${day.day}',
+                            style: const TextStyle(
+                              color: Colors.white,
                             ),
-                            const SizedBox(height: 5),
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isCompleted
-                                    ? colors[widget.habit.color]
-                                    : Colors.transparent,
-                              ),
-                            )
-                          ],
+                          ),
                         ),
                       );
                     },
@@ -1400,28 +1415,22 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
 
                       debugPrint(isCompleted.toString());
 
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              '${day.day}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                              ),
+                      return Container(
+                        width: sizeConfig.xxxxl,
+                        height: sizeConfig.xxxxl,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isCompleted
+                              ? colors[widget.habit.color]
+                              : Colors.transparent,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${day.day}',
+                            style: const TextStyle(
+                              color: Colors.white,
                             ),
-                            const SizedBox(height: 5),
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isCompleted
-                                    ? colors[widget.habit.color]
-                                    : Colors.transparent,
-                              ),
-                            )
-                          ],
+                          ),
                         ),
                       );
                     },
@@ -1436,28 +1445,22 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
 
                       debugPrint(isCompleted.toString());
 
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              '${day.day}',
-                              style: const TextStyle(
-                                color: Color(0xFF8E8E8E),
-                              ),
+                      return Container(
+                        width: sizeConfig.xxxxl,
+                        height: sizeConfig.xxxxl,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isCompleted
+                              ? colors[widget.habit.color]
+                              : Colors.transparent,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${day.day}',
+                            style: const TextStyle(
+                              color: Colors.white,
                             ),
-                            const SizedBox(height: 5),
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isCompleted
-                                    ? colors[widget.habit.color]
-                                    : Colors.transparent,
-                              ),
-                            )
-                          ],
+                          ),
                         ),
                       );
                     },
