@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:streakit/constants.dart';
 import 'package:streakit/models/habit.dart';
@@ -41,7 +42,7 @@ class _NewHabitScreenState extends State<NewHabitScreen> {
         backgroundColor: Colors.transparent,
         leading: IconButton(
           onPressed: () {
-            Navigator.pop(context);
+            context.pop();
           },
           icon: Icon(
             Icons.arrow_back_ios,
@@ -307,7 +308,7 @@ class _NewHabitScreenState extends State<NewHabitScreen> {
                 );
                 await _dbHelper.createHabit(newHabit);
 
-                Navigator.pop(context, true);
+                context.pop(true);
               },
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.white,

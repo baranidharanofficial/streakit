@@ -9,9 +9,6 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:streakit/constants.dart';
 import 'package:streakit/models/habit.dart';
-import 'package:streakit/pages/reorder.dart';
-import 'package:streakit/pages/update_habit.dart';
-import 'package:streakit/pages/new_habit.dart';
 import 'package:streakit/pages/widgets/custom_grid.dart';
 import 'package:streakit/pages/widgets/gradient_icon.dart';
 import 'package:streakit/pages/widgets/habit_card.dart';
@@ -164,11 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: habits.isNotEmpty
           ? FloatingActionButton(
               onPressed: () async {
-                bool? habitAdded = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const NewHabitScreen()),
-                );
+                bool? habitAdded = await context.push('/new-habit');
 
                 // If a habit was added, reload the list
                 if (habitAdded == true) {
@@ -769,14 +762,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               const Color(0xFF272727),
                                         ),
                                         onPressed: () async {
-                                          await Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const ReorderHabits(),
-                                            ),
-                                          );
-
+                                          await context.push('/reorder');
                                           _loadHabits();
                                         },
                                         icon: Icon(
@@ -1161,17 +1147,6 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                 children: [
                   GestureDetector(
                     onTap: () async {
-                      // bool? isUpdated = await Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //     builder: (context) => UpdateHabitScreen(
-                      //       habit: widget.habit,
-                      //     ),
-                      //   ),
-                      // );
-                      // if (isUpdated != null && isUpdated) {
-                      //   widget.onChange(null, null);
-                      // }
                       showDialog(
                         context: context,
                         builder: (context) {
@@ -1208,7 +1183,7 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                                       Expanded(
                                         child: FilledButton(
                                           onPressed: () {
-                                            Navigator.pop(context);
+                                            context.pop();
                                           },
                                           style: FilledButton.styleFrom(
                                             backgroundColor: Colors.black,
@@ -1232,8 +1207,8 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                                         child: FilledButton(
                                           onPressed: () {
                                             widget.onDelete(widget.habit);
-                                            Navigator.pop(context);
-                                            Navigator.pop(context);
+                                            context.pop();
+                                            context.pop();
                                           },
                                           style: FilledButton.styleFrom(
                                             backgroundColor: Colors.white,
@@ -1258,7 +1233,6 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                           );
                         },
                       );
-                      // Navigator.pop(context);
                     },
                     child: Container(
                       height: sizeConfig.xxl * 2,
@@ -1282,18 +1256,15 @@ class _HabitBottomSheetState extends State<HabitBottomSheet> {
                   ),
                   GestureDetector(
                     onTap: () async {
-                      bool? isUpdated = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UpdateHabitScreen(
-                            habit: widget.habit,
-                          ),
-                        ),
+                      bool? isUpdated = await context.push(
+                        'update-habit',
+                        extra: widget.habit,
                       );
+
                       if (isUpdated != null && isUpdated) {
                         widget.onChange(null, null);
                       }
-                      Navigator.pop(context);
+                      context.pop();
                     },
                     child: Container(
                       height: sizeConfig.xxl * 2,

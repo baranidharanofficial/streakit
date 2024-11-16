@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:streakit/constants.dart';
 import 'package:streakit/models/habit.dart';
 import 'package:streakit/service/db_service.dart';
@@ -52,7 +53,7 @@ class _ReorderHabitsState extends State<ReorderHabits> {
         backgroundColor: Colors.transparent,
         leading: IconButton(
           onPressed: () {
-            Navigator.pop(context);
+            context.pop();
           },
           icon: Icon(
             Icons.arrow_back_ios,

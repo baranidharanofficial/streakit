@@ -21,8 +21,6 @@ Future<void> main() async {
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
 GoRouter router = GoRouter(
   initialLocation: '/',
   routes: [
