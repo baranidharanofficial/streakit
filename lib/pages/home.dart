@@ -3,14 +3,17 @@ import 'dart:ui';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:streakit/constants.dart';
 import 'package:streakit/models/habit.dart';
-import 'package:streakit/pages/notifications.dart';
 import 'package:streakit/pages/reorder.dart';
 import 'package:streakit/pages/update_habit.dart';
 import 'package:streakit/pages/new_habit.dart';
 import 'package:streakit/pages/widgets/custom_grid.dart';
+import 'package:streakit/pages/widgets/gradient_icon.dart';
 import 'package:streakit/pages/widgets/habit_card.dart';
 import 'package:streakit/service/db_service.dart';
 import 'package:streakit/service/utils.dart';
@@ -33,7 +36,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String cardView = "grid";
   bool isUpdateAvailable = false;
   bool isCalendar = false;
+  bool isUniverse = false;
   DateTime focusDay = DateTime.now();
+  DailyMessage? currentMessage;
+  List<DailyMessage> messages = [];
 
   @override
   void initState() {
@@ -42,7 +48,10 @@ class _HomeScreenState extends State<HomeScreen> {
     threeWeeks = getLastThreeWeeks(DateTime.now());
     lastYearWeeks = getLastYearWeeks(DateTime.now());
     _loadHabits();
-    fetchVersionCollection();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await fetchVersionCollection();
+      await fetchUniverseMessage();
+    });
   }
 
   Future<void> _loadHabits() async {
@@ -100,6 +109,48 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {});
     } catch (e) {
       debugPrint("Error fetching version collection: $e");
+    }
+  }
+
+  Future<void> fetchUniverseMessage() async {
+    try {
+      CollectionReference notificationCollection =
+          FirebaseFirestore.instance.collection('daily-message');
+      QuerySnapshot snapshot = await notificationCollection.get();
+
+      if (snapshot.docs.isNotEmpty) {
+        var messagesData = snapshot.docs[0]['quotes'] as List<dynamic>;
+        List<DailyMessage> data = messagesData
+            .map((messageData) {
+              return DailyMessage.fromMap(messageData as Map<String, dynamic>);
+            })
+            .toList()
+            .reversed
+            .toList();
+
+        messages = data;
+
+        if (messages
+            .where((res) => isSameDate(res.createdAt, DateTime.now()))
+            .isNotEmpty) {
+          DailyMessage message = messages
+              .where((res) => isSameDate(res.createdAt, DateTime.now()))
+              .first;
+
+          final SharedPreferences prefs = await SharedPreferences.getInstance();
+          List<String>? claimed = prefs.getStringList('claimed');
+
+          if (claimed != null && !claimed.contains(message.quote)) {
+            isUniverse = true;
+            currentMessage = message;
+            setState(() {});
+          }
+        }
+      }
+
+      setState(() {});
+    } catch (e) {
+      debugPrint("Error fetching notifications: $e");
     }
   }
 
@@ -194,13 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           IconButton.filled(
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const NotificationScreen(),
-                                ),
-                              );
+                              context.push('/notifications');
                             },
                             style: IconButton.styleFrom(
                               backgroundColor: const Color(0xFF222222),
@@ -218,12 +263,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             onPressed: () {
                               isCalendar = !isCalendar;
                               setState(() {});
-                              // Navigator.push(
-                              //   context,
-                              //   MaterialPageRoute(
-                              //     builder: (context) => const CalendarScreen(),
-                              //   ),
-                              // );
                             },
                             style: IconButton.styleFrom(
                               backgroundColor: isCalendar
@@ -308,90 +347,91 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   if (isCalendar)
                     Expanded(
-                      child: Column(
-                        children: [
-                          SizedBox(
-                            height: sizeConfig.xxs,
-                          ),
-                          TableCalendar(
-                            focusedDay: focusDay,
-                            firstDay: DateTime(2000),
-                            lastDay: DateTime(3000),
-                            headerVisible: true,
-                            daysOfWeekVisible: false,
-                            rowHeight: 80,
-                            daysOfWeekStyle: DaysOfWeekStyle(
-                              weekdayStyle: textConfig.whiteMedium,
-                              weekendStyle: textConfig.whiteMedium,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Column(
+                          children: [
+                            SizedBox(
+                              height: sizeConfig.xxs,
                             ),
-                            headerStyle: HeaderStyle(
-                              formatButtonVisible: false,
-                              titleCentered: false,
-                              titleTextStyle: textConfig.whiteLarge,
-                              leftChevronVisible: false,
-                              rightChevronVisible: false,
-                              headerPadding: EdgeInsets.symmetric(
-                                horizontal: sizeConfig.xxs,
-                                vertical: sizeConfig.xs,
+                            TableCalendar(
+                              focusedDay: focusDay,
+                              firstDay: DateTime(2000),
+                              lastDay: DateTime(3000),
+                              headerVisible: true,
+                              daysOfWeekVisible: false,
+                              rowHeight: 80,
+                              daysOfWeekStyle: DaysOfWeekStyle(
+                                weekdayStyle: textConfig.whiteMedium,
+                                weekendStyle: textConfig.whiteMedium,
+                              ),
+                              headerStyle: HeaderStyle(
+                                formatButtonVisible: false,
+                                titleCentered: false,
+                                titleTextStyle: textConfig.whiteLarge,
+                                leftChevronVisible: false,
+                                rightChevronVisible: false,
+                                headerPadding: EdgeInsets.symmetric(
+                                  horizontal: sizeConfig.xxs,
+                                  vertical: sizeConfig.xs,
+                                ),
+                              ),
+                              calendarFormat: CalendarFormat.week,
+                              onDaySelected: (selectedDay, focusedDay) {
+                                focusDay = selectedDay;
+                                debugPrint(selectedDay.toIso8601String());
+                                setState(() {});
+                              },
+                              calendarBuilders: CalendarBuilders(
+                                todayBuilder: (context, day, focusedDay) {
+                                  bool isCompleted = isSameDate(
+                                    day,
+                                    DateTime(
+                                      focusedDay.year,
+                                      focusedDay.month,
+                                      focusedDay.day,
+                                    ),
+                                  );
+                                  return DateWidget(
+                                    isCompleted: isCompleted,
+                                    day: day,
+                                  );
+                                },
+                                defaultBuilder: (context, day, focusedDay) {
+                                  bool isCompleted = isSameDate(
+                                    day,
+                                    DateTime(
+                                      focusedDay.year,
+                                      focusedDay.month,
+                                      focusedDay.day,
+                                    ),
+                                  );
+
+                                  return DateWidget(
+                                    isCompleted: isCompleted,
+                                    day: day,
+                                  );
+                                },
+                                outsideBuilder: (context, day, focusedDay) {
+                                  bool isCompleted = isSameDate(
+                                    day,
+                                    DateTime(
+                                      focusedDay.year,
+                                      focusedDay.month,
+                                      focusedDay.day,
+                                    ),
+                                  );
+                                  return DateWidget(
+                                    isCompleted: isCompleted,
+                                    day: day,
+                                  );
+                                },
                               ),
                             ),
-                            calendarFormat: CalendarFormat.week,
-                            onDaySelected: (selectedDay, focusedDay) {
-                              focusDay = selectedDay;
-                              debugPrint(selectedDay.toIso8601String());
-                              setState(() {});
-                            },
-                            calendarBuilders: CalendarBuilders(
-                              todayBuilder: (context, day, focusedDay) {
-                                bool isCompleted = isSameDate(
-                                  day,
-                                  DateTime(
-                                    focusedDay.year,
-                                    focusedDay.month,
-                                    focusedDay.day,
-                                  ),
-                                );
-                                return DateWidget(
-                                  isCompleted: isCompleted,
-                                  day: day,
-                                );
-                              },
-                              defaultBuilder: (context, day, focusedDay) {
-                                bool isCompleted = isSameDate(
-                                  day,
-                                  DateTime(
-                                    focusedDay.year,
-                                    focusedDay.month,
-                                    focusedDay.day,
-                                  ),
-                                );
-
-                                return DateWidget(
-                                  isCompleted: isCompleted,
-                                  day: day,
-                                );
-                              },
-                              outsideBuilder: (context, day, focusedDay) {
-                                bool isCompleted = isSameDate(
-                                  day,
-                                  DateTime(
-                                    focusedDay.year,
-                                    focusedDay.month,
-                                    focusedDay.day,
-                                  ),
-                                );
-                                return DateWidget(
-                                  isCompleted: isCompleted,
-                                  day: day,
-                                );
-                              },
+                            SizedBox(
+                              height: sizeConfig.xxl,
                             ),
-                          ),
-                          SizedBox(
-                            height: sizeConfig.xxl,
-                          ),
-                          Expanded(
-                            child: ListView.separated(
+                            ListView.separated(
                               itemCount: habits.length,
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
@@ -525,8 +565,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 );
                               },
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   if (!isCalendar)
@@ -869,12 +909,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         onPressed: () async {
                                           bool? habitAdded =
-                                              await Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) =>
-                                                    const NewHabitScreen()),
-                                          );
+                                              await context.push('/new-habit');
 
                                           // If a habit was added, reload the list
                                           if (habitAdded == true) {
@@ -898,6 +933,104 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                 ],
+              ),
+            ),
+          ),
+          Visibility(
+            visible: isUniverse,
+            child: Positioned(
+              bottom: MediaQuery.sizeOf(context).height * 0.3,
+              left: 0,
+              child: Container(
+                height: 44,
+                width: 44,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(sizeConfig.small),
+                    bottomRight: Radius.circular(sizeConfig.small),
+                  ),
+                  // color: Colors.white,
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF904CFF),
+                      Color(0xFF2D8CFF),
+                    ],
+                  ),
+                ),
+                child: TextButton(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: Colors.white,
+                        title: Text(
+                          "Message from Universe",
+                          style: textConfig.large.copyWith(
+                            fontSize: sizeConfig.xxl,
+                          ),
+                        ),
+                        content: Text(
+                          "or perhaps from barani or something he stumbled upon.",
+                          style: textConfig.medium,
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              context.pop();
+                            },
+                            child: Text(
+                              "Cancel",
+                              style: textConfig.large,
+                            ),
+                          ),
+                          FilledButton(
+                            onPressed: () {
+                              isUniverse = false;
+                              setState(() {});
+                              context.pop();
+                              context.push(
+                                '/daily-message',
+                                extra: currentMessage,
+                              );
+                            },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.black,
+                            ),
+                            child: Text(
+                              "View",
+                              style: textConfig.large.copyWith(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Center(
+                    child: GradientIcon(
+                      icon: HugeIcons.strokeRoundedSaturn01,
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFFFFFFFF),
+                          Color(0xFFCDE4FF),
+                        ],
+                      ),
+                      size: sizeConfig.xxxxl,
+                    )
+                        .animate(
+                          onPlay: (controller) => controller.repeat(),
+                        )
+                        .rotate(
+                          duration: const Duration(seconds: 6),
+                        ),
+                  ),
+                ),
               ),
             ),
           ),

@@ -87,3 +87,20 @@ class NotificationMessage {
     );
   }
 }
+
+class DailyMessage {
+  final String quote;
+  final DateTime createdAt;
+
+  DailyMessage({
+    required this.quote,
+    required this.createdAt,
+  });
+
+  factory DailyMessage.fromMap(Map<String, dynamic> data) {
+    return DailyMessage(
+      quote: data['quote'] as String,
+      createdAt: (data['created_at'] as Timestamp).toDate(),
+    );
+  }
+}

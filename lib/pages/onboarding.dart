@@ -1,8 +1,8 @@
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:streakit/constants.dart';
-import 'package:streakit/pages/home.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -125,12 +125,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               await SharedPreferences.getInstance();
                           await prefs.setBool('onboarded', true);
 
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const HomeScreen(),
-                            ),
-                          );
+                          context.go('/home');
                         },
                         style: IconButton.styleFrom(
                           backgroundColor: Colors.white,

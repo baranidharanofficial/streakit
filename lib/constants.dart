@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 
 const String fontFamily = 'Montserrat';
-const String appVersion = '1.0.3';
+const String appVersion = '1.0.4';
 const int version = 3;
 
 String iosLink = "";
