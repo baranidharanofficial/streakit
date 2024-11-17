@@ -1,7 +1,11 @@
+// ignore_for_file: unnecessary_null_comparison
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:streakit/constants.dart';
 import 'package:streakit/models/habit.dart';
+import 'package:streakit/service/admob_service.dart';
 import 'package:streakit/service/db_service.dart';
 
 class ReorderHabits extends StatefulWidget {
@@ -17,11 +21,22 @@ class _ReorderHabitsState extends State<ReorderHabits> {
   List<Habit> _habits = [];
   bool isReordering = false;
   bool isLoading = true;
+  BannerAd? _bannerAd;
 
   @override
   void initState() {
     super.initState();
     _loadHabits();
+    _createBannerAd();
+  }
+
+  _createBannerAd() {
+    _bannerAd = BannerAd(
+      size: AdSize.fullBanner,
+      adUnitId: AdMobService.bannerAdUnitId!,
+      listener: AdMobService.bannerListener,
+      request: const AdRequest(),
+    )..load();
   }
 
   Future<void> _loadHabits() async {
@@ -133,6 +148,15 @@ class _ReorderHabitsState extends State<ReorderHabits> {
                 ),
               ),
             ),
+      bottomNavigationBar: _bannerAd != null
+          ? Container(
+              padding: EdgeInsets.only(
+                bottom: sizeConfig.small,
+              ),
+              height: 52,
+              child: AdWidget(ad: _bannerAd!),
+            )
+          : const SizedBox(),
     );
   }
 }
