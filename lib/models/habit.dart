@@ -90,15 +90,18 @@ class NotificationMessage {
 
 class DailyMessage {
   final String quote;
+  final String title;
   final DateTime createdAt;
 
   DailyMessage({
+    required this.title,
     required this.quote,
     required this.createdAt,
   });
 
   factory DailyMessage.fromMap(Map<String, dynamic> data) {
     return DailyMessage(
+      title: data['title'] as String,
       quote: data['quote'] as String,
       createdAt: (data['created_at'] as Timestamp).toDate(),
     );

@@ -22,9 +22,10 @@ dependencies:
   cloud_firestore: ^5.4.4
   hugeicons: ^0.0.7
   url_launcher: ^6.3.1
-  go_router: ^14.6.0
+  go_router: ^12.1.3
   flutter_animate: ^4.5.0
   google_mobile_ads: ^5.2.0
+  fluttertoast: ^8.2.8
 
 dev_dependencies:
   flutter_test:

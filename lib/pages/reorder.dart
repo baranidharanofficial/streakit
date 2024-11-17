@@ -32,7 +32,7 @@ class _ReorderHabitsState extends State<ReorderHabits> {
 
   _createBannerAd() {
     _bannerAd = BannerAd(
-      size: AdSize.fullBanner,
+      size: AdSize.banner,
       adUnitId: AdMobService.bannerAdUnitId!,
       listener: AdMobService.bannerListener,
       request: const AdRequest(),

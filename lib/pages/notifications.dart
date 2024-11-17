@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:streakit/constants.dart';
 import 'package:streakit/models/habit.dart';
+import 'package:streakit/service/admob_service.dart';
 import 'package:streakit/service/utils.dart';
 
 class NotificationScreen extends StatefulWidget {
@@ -14,10 +16,13 @@ class NotificationScreen extends StatefulWidget {
 
 class _NotificationScreenState extends State<NotificationScreen> {
   List<NotificationMessage> messages = [];
+  BannerAd? _bannerAd;
+
   @override
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await fetchNotifications();
+      _createBannerAd();
     });
     super.initState();
   }
@@ -46,6 +51,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
     } catch (e) {
       debugPrint("Error fetching notifications: $e");
     }
+  }
+
+  _createBannerAd() {
+    _bannerAd = BannerAd(
+      size: AdSize.banner,
+      adUnitId: AdMobService.bannerAdUnitId!,
+      listener: AdMobService.bannerListener,
+      request: const AdRequest(),
+    )..load();
   }
 
   @override
@@ -153,6 +167,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 ],
               ),
             ),
+      bottomNavigationBar: _bannerAd != null
+          ? Container(
+              padding: EdgeInsets.only(
+                bottom: sizeConfig.small,
+              ),
+              height: 52,
+              child: AdWidget(ad: _bannerAd!),
+            )
+          : const SizedBox(),
     );
   }
 }

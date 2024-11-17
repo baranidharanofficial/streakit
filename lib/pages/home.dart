@@ -2,9 +2,12 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:streakit/constants.dart';
@@ -12,6 +15,7 @@ import 'package:streakit/models/habit.dart';
 import 'package:streakit/pages/widgets/custom_grid.dart';
 import 'package:streakit/pages/widgets/gradient_icon.dart';
 import 'package:streakit/pages/widgets/habit_card.dart';
+import 'package:streakit/service/admob_service.dart';
 import 'package:streakit/service/db_service.dart';
 import 'package:streakit/service/utils.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -37,6 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime focusDay = DateTime.now();
   DailyMessage? currentMessage;
   List<DailyMessage> messages = [];
+  bool canPopScreen = false;
+  RewardedAd? _rewardedAd;
 
   @override
   void initState() {
@@ -139,6 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           if (claimed != null && !claimed.contains(message.quote)) {
             isUniverse = true;
+            createRewardedAd();
             currentMessage = message;
             setState(() {});
           }
@@ -151,377 +158,435 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void createRewardedAd() {
+    RewardedAd.load(
+        adUnitId: AdMobService.rewardedAdUnitId!,
+        request: const AdRequest(),
+        rewardedAdLoadCallback: RewardedAdLoadCallback(
+          onAdLoaded: (ad) {
+            _rewardedAd = ad;
+            setState(() {});
+            if (kDebugMode) {
+              print("----------------LOADED REWARDED AD-----------------");
+            }
+          },
+          onAdFailedToLoad: (error) {
+            _rewardedAd = null;
+            setState(() {});
+            if (kDebugMode) {
+              print("----------------FAILED REWARDED AD-----------------");
+              print(error);
+            }
+          },
+        ));
+  }
+
+  Future<void> showRewardedAd(BuildContext context) async {
+    if (kDebugMode) {
+      print("----------------SHOW REWARDED AD-----------------");
+    }
+
+    if (_rewardedAd != null) {
+      _rewardedAd!.fullScreenContentCallback =
+          FullScreenContentCallback(onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        context.pop();
+        createRewardedAd();
+      }, onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        context.pop();
+        createRewardedAd();
+        context.push(
+          '/daily-message',
+          extra: currentMessage,
+        );
+      });
+      _rewardedAd!.show(onUserEarnedReward: (ad, reward) {
+        isUniverse = false;
+        setState(() {});
+        context.pop();
+        context.push(
+          '/daily-message',
+          extra: currentMessage,
+        );
+      });
+      _rewardedAd = null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     var width = MediaQuery.of(context).size.width;
     // var height = MediaQuery.of(context).size.height;
     // bool positive = false;
-    return Scaffold(
-      backgroundColor: const Color(0xFF0E0E0E),
-      floatingActionButton: habits.isNotEmpty
-          ? FloatingActionButton(
-              onPressed: () async {
-                bool? habitAdded = await context.push('/new-habit');
+    return WillPopScope(
+      onWillPop: () {
+        if (canPopScreen) {
+          return Future.value(true);
+        } else {
+          canPopScreen = true;
+          Fluttertoast.showToast(
+            backgroundColor: const Color(0xFF2E2E2E),
+            msg: 'Press again to exit',
+          );
+          setState(() {});
+          return Future.value(false);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF0E0E0E),
+        floatingActionButton: habits.isNotEmpty
+            ? FloatingActionButton(
+                onPressed: () async {
+                  bool? habitAdded = await context.push('/new-habit');
 
-                // If a habit was added, reload the list
-                if (habitAdded == true) {
-                  _loadHabits(); // Refresh the habit list
-                }
-              },
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  sizeConfig.xxxxl,
-                ),
-              ),
-              child: Icon(
-                Icons.add,
-                size: sizeConfig.xxxxxl,
-              ),
-            )
-          : const SizedBox(),
-      body: Stack(
-        children: [
-          if (habits.isEmpty)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              child: Container(
-                height: 50,
-                width: MediaQuery.of(context).size.width,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0x2EA7FF6D),
-                      Color(0x56FFAE34),
-                    ],
+                  // If a habit was added, reload the list
+                  if (habitAdded == true) {
+                    _loadHabits(); // Refresh the habit list
+                  }
+                },
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    sizeConfig.xxxxl,
                   ),
                 ),
+                child: Icon(
+                  Icons.add,
+                  size: sizeConfig.xxxxxl,
+                ),
+              )
+            : const SizedBox(),
+        body: Stack(
+          children: [
+            if (habits.isEmpty)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                child: Container(
+                  height: 50,
+                  width: MediaQuery.of(context).size.width,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0x2EA7FF6D),
+                        Color(0x56FFAE34),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: 1000,
+                  sigmaY: 200,
+                ),
+                child: const SizedBox(),
               ),
             ),
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(
-                sigmaX: 1000,
-                sigmaY: 200,
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: sizeConfig.large,
               ),
-              child: const SizedBox(),
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: sizeConfig.large,
-            ),
-            child: SafeArea(
-              child: Column(
-                children: [
-                  // App Bar
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Good",
-                            style: textConfig.whiteTitle.copyWith(
-                              color: const Color(0xFFA8A8A8),
-                            ),
-                          ),
-                          Text(
-                            getTimeOfDay(),
-                            style: textConfig.whiteTitle,
-                          )
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          IconButton.filled(
-                            onPressed: () {
-                              context.push('/notifications');
-                            },
-                            style: IconButton.styleFrom(
-                              backgroundColor: const Color(0xFF222222),
-                              padding: EdgeInsets.all(
-                                sizeConfig.xs,
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    // App Bar
+                    SizedBox(
+                      height: sizeConfig.xs,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Good",
+                              style: textConfig.whiteTitle.copyWith(
+                                color: const Color(0xFFA8A8A8),
                               ),
                             ),
-                            icon: Icon(
-                              Icons.notifications_outlined,
-                              color: Colors.white,
-                              size: sizeConfig.xxxl,
-                            ),
-                          ),
-                          IconButton.filled(
-                            onPressed: () {
-                              isCalendar = !isCalendar;
-                              setState(() {});
-                            },
-                            style: IconButton.styleFrom(
-                              backgroundColor: isCalendar
-                                  ? Colors.white
-                                  : const Color(0xFF222222),
-                              padding: EdgeInsets.all(
-                                sizeConfig.xs,
-                              ),
-                            ),
-                            icon: Icon(
-                              Icons.calendar_month_outlined,
-                              color: isCalendar ? Colors.black : Colors.white,
-                              size: sizeConfig.xxxl,
-                            ),
-                          ),
-                        ],
-                      )
-                    ],
-                  ),
-                  SizedBox(
-                    height: sizeConfig.xl,
-                  ),
-                  if (isUpdateAvailable)
-                    Container(
-                      margin: EdgeInsets.only(
-                        bottom: sizeConfig.large,
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: sizeConfig.xl,
-                        vertical: sizeConfig.xl,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(
-                          sizeConfig.xxxl,
+                            Text(
+                              getTimeOfDay(),
+                              style: textConfig.whiteTitle,
+                            )
+                          ],
                         ),
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.green.withOpacity(0.5),
-                            Colors.orange.withOpacity(0.5),
+                        Row(
+                          children: [
+                            IconButton.filled(
+                              onPressed: () {
+                                context.push('/notifications');
+                              },
+                              style: IconButton.styleFrom(
+                                backgroundColor: const Color(0xFF222222),
+                                padding: EdgeInsets.all(
+                                  sizeConfig.xs,
+                                ),
+                              ),
+                              icon: Icon(
+                                Icons.notifications_outlined,
+                                color: Colors.white,
+                                size: sizeConfig.xxxl,
+                              ),
+                            ),
+                            IconButton.filled(
+                              onPressed: () {
+                                isCalendar = !isCalendar;
+                                setState(() {});
+                              },
+                              style: IconButton.styleFrom(
+                                backgroundColor: isCalendar
+                                    ? Colors.white
+                                    : const Color(0xFF222222),
+                                padding: EdgeInsets.all(
+                                  sizeConfig.xs,
+                                ),
+                              ),
+                              icon: Icon(
+                                Icons.calendar_month_outlined,
+                                color: isCalendar ? Colors.black : Colors.white,
+                                size: sizeConfig.xxxl,
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                    SizedBox(
+                      height: sizeConfig.xl,
+                    ),
+                    if (isUpdateAvailable)
+                      Container(
+                        margin: EdgeInsets.only(
+                          bottom: sizeConfig.large,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: sizeConfig.xl,
+                          vertical: sizeConfig.xl,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(
+                            sizeConfig.xxxl,
+                          ),
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.green.withOpacity(0.5),
+                              Colors.orange.withOpacity(0.5),
+                            ],
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "New version is available",
+                              style: textConfig.whiteLarge,
+                            ),
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    sizeConfig.large,
+                                  ),
+                                ),
+                              ),
+                              onPressed: () async {
+                                if (Platform.isAndroid &&
+                                    !await launchUrl(Uri.parse(androidLink))) {
+                                  throw Exception(
+                                    'Could not launch $androidLink',
+                                  );
+                                }
+
+                                if (Platform.isIOS &&
+                                    !await launchUrl(Uri.parse(iosLink))) {
+                                  throw Exception(
+                                    'Could not launch $androidLink',
+                                  );
+                                }
+                              },
+                              child: Text(
+                                "Update",
+                                style: textConfig.large,
+                              ),
+                            )
                           ],
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "New version is available",
-                            style: textConfig.whiteLarge,
-                          ),
-                          FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  sizeConfig.large,
+                    if (isCalendar)
+                      Expanded(
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                height: sizeConfig.xxs,
+                              ),
+                              TableCalendar(
+                                focusedDay: focusDay,
+                                firstDay: DateTime(2000),
+                                lastDay: DateTime(3000),
+                                headerVisible: true,
+                                daysOfWeekVisible: false,
+                                rowHeight: 80,
+                                daysOfWeekStyle: DaysOfWeekStyle(
+                                  weekdayStyle: textConfig.whiteMedium,
+                                  weekendStyle: textConfig.whiteMedium,
                                 ),
-                              ),
-                            ),
-                            onPressed: () async {
-                              if (Platform.isAndroid &&
-                                  !await launchUrl(Uri.parse(androidLink))) {
-                                throw Exception(
-                                  'Could not launch $androidLink',
-                                );
-                              }
-
-                              if (Platform.isIOS &&
-                                  !await launchUrl(Uri.parse(iosLink))) {
-                                throw Exception(
-                                  'Could not launch $androidLink',
-                                );
-                              }
-                            },
-                            child: Text(
-                              "Update",
-                              style: textConfig.large,
-                            ),
-                          )
-                        ],
-                      ),
-                    ),
-                  if (isCalendar)
-                    Expanded(
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        child: Column(
-                          children: [
-                            SizedBox(
-                              height: sizeConfig.xxs,
-                            ),
-                            TableCalendar(
-                              focusedDay: focusDay,
-                              firstDay: DateTime(2000),
-                              lastDay: DateTime(3000),
-                              headerVisible: true,
-                              daysOfWeekVisible: false,
-                              rowHeight: 80,
-                              daysOfWeekStyle: DaysOfWeekStyle(
-                                weekdayStyle: textConfig.whiteMedium,
-                                weekendStyle: textConfig.whiteMedium,
-                              ),
-                              headerStyle: HeaderStyle(
-                                formatButtonVisible: false,
-                                titleCentered: false,
-                                titleTextStyle: textConfig.whiteLarge,
-                                leftChevronVisible: false,
-                                rightChevronVisible: false,
-                                headerPadding: EdgeInsets.symmetric(
-                                  horizontal: sizeConfig.xxs,
-                                  vertical: sizeConfig.xs,
+                                headerStyle: HeaderStyle(
+                                  formatButtonVisible: false,
+                                  titleCentered: false,
+                                  titleTextStyle: textConfig.whiteLarge,
+                                  leftChevronVisible: false,
+                                  rightChevronVisible: false,
+                                  headerPadding: EdgeInsets.symmetric(
+                                    horizontal: sizeConfig.xxs,
+                                    vertical: sizeConfig.xs,
+                                  ),
                                 ),
-                              ),
-                              calendarFormat: CalendarFormat.week,
-                              onDaySelected: (selectedDay, focusedDay) {
-                                focusDay = selectedDay;
-                                debugPrint(selectedDay.toIso8601String());
-                                setState(() {});
-                              },
-                              calendarBuilders: CalendarBuilders(
-                                todayBuilder: (context, day, focusedDay) {
-                                  bool isCompleted = isSameDate(
-                                    day,
-                                    DateTime(
-                                      focusedDay.year,
-                                      focusedDay.month,
-                                      focusedDay.day,
-                                    ),
-                                  );
-                                  return DateWidget(
-                                    isCompleted: isCompleted,
-                                    day: day,
-                                  );
+                                calendarFormat: CalendarFormat.week,
+                                onDaySelected: (selectedDay, focusedDay) {
+                                  focusDay = selectedDay;
+                                  debugPrint(selectedDay.toIso8601String());
+                                  setState(() {});
                                 },
-                                defaultBuilder: (context, day, focusedDay) {
-                                  bool isCompleted = isSameDate(
-                                    day,
-                                    DateTime(
-                                      focusedDay.year,
-                                      focusedDay.month,
-                                      focusedDay.day,
-                                    ),
-                                  );
-
-                                  return DateWidget(
-                                    isCompleted: isCompleted,
-                                    day: day,
-                                  );
-                                },
-                                outsideBuilder: (context, day, focusedDay) {
-                                  bool isCompleted = isSameDate(
-                                    day,
-                                    DateTime(
-                                      focusedDay.year,
-                                      focusedDay.month,
-                                      focusedDay.day,
-                                    ),
-                                  );
-                                  return DateWidget(
-                                    isCompleted: isCompleted,
-                                    day: day,
-                                  );
-                                },
-                              ),
-                            ),
-                            SizedBox(
-                              height: sizeConfig.xxl,
-                            ),
-                            ListView.separated(
-                              itemCount: habits.length,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              separatorBuilder: (context, index) {
-                                return SizedBox(
-                                  height: sizeConfig.medium,
-                                );
-                              },
-                              itemBuilder: (context, index) {
-                                return Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: sizeConfig.xl,
-                                    vertical: sizeConfig.large,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF282828),
-                                    borderRadius: BorderRadius.circular(
-                                      sizeConfig.xs,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          HugeIcon(
-                                            icon: icons[habits[index].icon],
-                                            color: colors[habits[index].color],
-                                          ),
-                                          SizedBox(
-                                            width: sizeConfig.small,
-                                          ),
-                                          Text(
-                                            habits[index].name,
-                                            style: textConfig.whiteLarge,
-                                          ),
-                                        ],
+                                calendarBuilders: CalendarBuilders(
+                                  todayBuilder: (context, day, focusedDay) {
+                                    bool isCompleted = isSameDate(
+                                      day,
+                                      DateTime(
+                                        focusedDay.year,
+                                        focusedDay.month,
+                                        focusedDay.day,
                                       ),
-                                      GestureDetector(
-                                        onTap: () async {
-                                          if (habits[index]
-                                              .completedDays
-                                              .contains(
+                                    );
+                                    return DateWidget(
+                                      isCompleted: isCompleted,
+                                      day: day,
+                                    );
+                                  },
+                                  defaultBuilder: (context, day, focusedDay) {
+                                    bool isCompleted = isSameDate(
+                                      day,
+                                      DateTime(
+                                        focusedDay.year,
+                                        focusedDay.month,
+                                        focusedDay.day,
+                                      ),
+                                    );
+
+                                    return DateWidget(
+                                      isCompleted: isCompleted,
+                                      day: day,
+                                    );
+                                  },
+                                  outsideBuilder: (context, day, focusedDay) {
+                                    bool isCompleted = isSameDate(
+                                      day,
+                                      DateTime(
+                                        focusedDay.year,
+                                        focusedDay.month,
+                                        focusedDay.day,
+                                      ),
+                                    );
+                                    return DateWidget(
+                                      isCompleted: isCompleted,
+                                      day: day,
+                                    );
+                                  },
+                                ),
+                              ),
+                              SizedBox(
+                                height: sizeConfig.xxl,
+                              ),
+                              ListView.separated(
+                                itemCount: habits.length,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                separatorBuilder: (context, index) {
+                                  return SizedBox(
+                                    height: sizeConfig.medium,
+                                  );
+                                },
+                                itemBuilder: (context, index) {
+                                  return Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: sizeConfig.xl,
+                                      vertical: sizeConfig.large,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF282828),
+                                      borderRadius: BorderRadius.circular(
+                                        sizeConfig.xs,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            HugeIcon(
+                                              icon: icons[habits[index].icon],
+                                              color:
+                                                  colors[habits[index].color],
+                                            ),
+                                            SizedBox(
+                                              width: sizeConfig.small,
+                                            ),
+                                            Text(
+                                              habits[index].name,
+                                              style: textConfig.whiteLarge,
+                                            ),
+                                          ],
+                                        ),
+                                        GestureDetector(
+                                          onTap: () async {
+                                            if (habits[index]
+                                                .completedDays
+                                                .contains(
+                                                  DateTime(
+                                                    focusDay.year,
+                                                    focusDay.month,
+                                                    focusDay.day,
+                                                  ),
+                                                )) {
+                                              habits[index].completedDays =
+                                                  habits[index]
+                                                      .completedDays
+                                                      .where(
+                                                        (cdate) =>
+                                                            cdate !=
+                                                            DateTime(
+                                                              focusDay.year,
+                                                              focusDay.month,
+                                                              focusDay.day,
+                                                            ),
+                                                      )
+                                                      .toList();
+                                            } else {
+                                              habits[index].completedDays = [
+                                                ...habits[index].completedDays,
                                                 DateTime(
                                                   focusDay.year,
                                                   focusDay.month,
                                                   focusDay.day,
                                                 ),
-                                              )) {
-                                            habits[index].completedDays =
-                                                habits[index]
-                                                    .completedDays
-                                                    .where(
-                                                      (cdate) =>
-                                                          cdate !=
-                                                          DateTime(
-                                                            focusDay.year,
-                                                            focusDay.month,
-                                                            focusDay.day,
-                                                          ),
-                                                    )
-                                                    .toList();
-                                          } else {
-                                            habits[index].completedDays = [
-                                              ...habits[index].completedDays,
-                                              DateTime(
-                                                focusDay.year,
-                                                focusDay.month,
-                                                focusDay.day,
-                                              ),
-                                            ];
-                                          }
-                                          await _dbHelper
-                                              .updateHabit(habits[index]);
-                                          _loadHabits();
-                                        },
-                                        child: Container(
-                                          height: sizeConfig.xxxxl,
-                                          width: sizeConfig.xxxxl,
-                                          decoration: BoxDecoration(
-                                            color: habits[index]
-                                                    .completedDays
-                                                    .contains(
-                                                      DateTime(
-                                                        focusDay.year,
-                                                        focusDay.month,
-                                                        focusDay.day,
-                                                      ),
-                                                    )
-                                                ? colors[habits[index].color]
-                                                : Colors.transparent,
-                                            borderRadius: BorderRadius.circular(
-                                              sizeConfig.xxxxxl,
-                                            ),
-                                            border: Border.all(
-                                              width: 1,
+                                              ];
+                                            }
+                                            await _dbHelper
+                                                .updateHabit(habits[index]);
+                                            _loadHabits();
+                                          },
+                                          child: Container(
+                                            height: sizeConfig.xxxxl,
+                                            width: sizeConfig.xxxxl,
+                                            decoration: BoxDecoration(
                                               color: habits[index]
                                                       .completedDays
                                                       .contains(
@@ -532,495 +597,525 @@ class _HomeScreenState extends State<HomeScreen> {
                                                         ),
                                                       )
                                                   ? colors[habits[index].color]
-                                                  : Colors.white,
+                                                  : Colors.transparent,
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                sizeConfig.xxxxxl,
+                                              ),
+                                              border: Border.all(
+                                                width: 1,
+                                                color: habits[index]
+                                                        .completedDays
+                                                        .contains(
+                                                          DateTime(
+                                                            focusDay.year,
+                                                            focusDay.month,
+                                                            focusDay.day,
+                                                          ),
+                                                        )
+                                                    ? colors[
+                                                        habits[index].color]
+                                                    : Colors.white,
+                                              ),
                                             ),
-                                          ),
-                                          child: habits[index]
-                                                  .completedDays
-                                                  .contains(
-                                                    DateTime(
-                                                      focusDay.year,
-                                                      focusDay.month,
-                                                      focusDay.day,
+                                            child: habits[index]
+                                                    .completedDays
+                                                    .contains(
+                                                      DateTime(
+                                                        focusDay.year,
+                                                        focusDay.month,
+                                                        focusDay.day,
+                                                      ),
+                                                    )
+                                                ? const Center(
+                                                    child: Icon(
+                                                      Icons.check,
+                                                      color: Colors.white,
                                                     ),
                                                   )
-                                              ? const Center(
-                                                  child: Icon(
-                                                    Icons.check,
-                                                    color: Colors.white,
-                                                  ),
-                                                )
-                                              : const SizedBox(),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  if (!isCalendar)
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.zero,
-                        child: Column(
-                          children: [
-                            //Today Progress
-                            Container(
-                              width: width,
-                              padding: EdgeInsets.all(
-                                sizeConfig.large,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF262626),
-                                borderRadius: BorderRadius.circular(
-                                  sizeConfig.xxxl,
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Padding(
-                                    padding:
-                                        EdgeInsets.only(left: sizeConfig.xxs),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          getFormattedDate(),
-                                          style:
-                                              textConfig.greyLarge.copyWith(),
-                                        ),
-                                        Text(
-                                          "Today's Progress",
-                                          style: textConfig.whiteTitle,
+                                                : const SizedBox(),
+                                          ),
                                         ),
                                       ],
                                     ),
-                                  ),
-                                  SizedBox(
-                                    height: sizeConfig.large,
-                                  ),
-                                  Text(
-                                    "${habitCount > 0 ? ((habitCount / habits.length) * 100).toInt() : 0}%",
-                                    style: textConfig.whiteTitle.copyWith(
-                                      fontSize: sizeConfig.xxxxl * 2,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding:
-                                        EdgeInsets.only(left: sizeConfig.xs),
-                                    child: Text(
-                                      "$habitCount / ${habits.length} Habits",
-                                      style: textConfig.greyLarge.copyWith(),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    height: sizeConfig.xs,
-                                  ),
-                                  Padding(
-                                    padding:
-                                        EdgeInsets.only(right: sizeConfig.xs),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      children: List.generate(10, (index) {
-                                        // Calculate how many circles to highlight based on the percentage
-                                        int highlightedCircles = habitCount > 0
-                                            ? (((habitCount / habits.length) *
-                                                            100)
-                                                        .toInt() /
-                                                    10)
-                                                .ceil()
-                                            : 0; // Divide percentage by 10 to get the number of circles
-
-                                        return Expanded(
-                                          child: AspectRatio(
-                                            aspectRatio: 1,
-                                            child: Container(
-                                              margin: const EdgeInsets.all(2),
-                                              // Add margin for spacing
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: index <
-                                                        highlightedCircles
-                                                    ? Colors
-                                                        .green // Highlighted circles
-                                                    : Colors.green.withOpacity(
-                                                        0.2), // Unhighlighted circles
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      }),
-                                    ),
-                                  )
-                                ],
+                                  );
+                                },
                               ),
-                            ),
-
-                            // Habits Grid View
-                            if (habits.isNotEmpty)
-                              Column(
-                                children: [
-                                  SizedBox(height: sizeConfig.xl),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Container(
-                                        width: 80,
-                                        height: 30,
-                                        margin: EdgeInsets.only(
-                                          left: sizeConfig.xxs,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF2F2F2F),
-                                          borderRadius: BorderRadius.circular(
-                                            sizeConfig.xs,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: GestureDetector(
-                                                onTap: () {
-                                                  cardView = "grid";
-                                                  setState(() {});
-                                                },
-                                                child: Container(
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: sizeConfig.xs,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: cardView == "grid"
-                                                        ? Colors.white
-                                                        : const Color(
-                                                            0xFF2C2C2C),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                      sizeConfig.xs,
-                                                    ),
-                                                  ),
-                                                  child: Center(
-                                                    child: Icon(
-                                                      Icons.grid_view_rounded,
-                                                      color: cardView == "grid"
-                                                          ? Colors.black
-                                                          : Colors.white,
-                                                      size: sizeConfig.xl,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            Expanded(
-                                              child: GestureDetector(
-                                                onTap: () {
-                                                  cardView = "list";
-                                                  setState(() {});
-                                                },
-                                                child: Container(
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: sizeConfig.xs,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: cardView == "list"
-                                                        ? Colors.white
-                                                        : const Color(
-                                                            0xFF2C2C2C),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                      sizeConfig.xs,
-                                                    ),
-                                                  ),
-                                                  child: Center(
-                                                    child: Icon(
-                                                      Icons.table_rows_rounded,
-                                                      color: cardView == "list"
-                                                          ? Colors.black
-                                                          : Colors.white,
-                                                      size: sizeConfig.xl,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      IconButton.filled(
-                                        style: IconButton.styleFrom(
-                                          visualDensity: VisualDensity.compact,
-                                          padding: EdgeInsets.zero,
-                                          backgroundColor:
-                                              const Color(0xFF272727),
-                                        ),
-                                        onPressed: () async {
-                                          await context.push('/reorder');
-                                          _loadHabits();
-                                        },
-                                        icon: Icon(
-                                          Icons.format_list_numbered_rounded,
-                                          size: sizeConfig.xxl,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  CustomGridView(
-                                    crossAxisCount: cardView == "grid" ? 2 : 1,
-                                    crossAxisSpacing: sizeConfig.large,
-                                    length: habits.length,
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    widgetOfIndex: (index) {
-                                      return GestureDetector(
-                                        onTap: () async {
-                                          await showModalBottomSheet(
-                                            context: context,
-                                            isScrollControlled: true,
-                                            builder: (context) {
-                                              return HabitBottomSheet(
-                                                onDelete: (Habit? habit) async {
-                                                  if (habit != null) {
-                                                    await _dbHelper
-                                                        .deleteHabit(habit.id!);
-
-                                                    _loadHabits();
-                                                  }
-                                                },
-                                                onChange: (Habit? habit,
-                                                    DateTime? date) async {
-                                                  if (habit != null &&
-                                                      date != null) {
-                                                    if (habit.completedDays
-                                                        .contains(date)) {
-                                                      habit.completedDays =
-                                                          habit.completedDays
-                                                              .where((cdate) =>
-                                                                  cdate != date)
-                                                              .toList();
-                                                    } else {
-                                                      habit.completedDays = [
-                                                        ...habit.completedDays,
-                                                        date,
-                                                      ];
-                                                    }
-                                                    await _dbHelper
-                                                        .updateHabit(habit);
-                                                  }
-
-                                                  _loadHabits();
-                                                },
-                                                lastYearWeeks: getLastYearWeeks(
-                                                  DateTime.now(),
-                                                ),
-                                                habit: habits[index],
-                                              );
-                                            },
-                                          );
-                                        },
-                                        child: HabitCard(
-                                          habit: habits[index],
-                                          threeWeeks: threeWeeks,
-                                          lastYearWeeks: lastYearWeeks,
-                                          isGrid: cardView == "grid",
-                                          markHabitAsDone: (Habit habit,
-                                              DateTime date) async {
-                                            if (habit.completedDays
-                                                .contains(date)) {
-                                              habit.completedDays = habit
-                                                  .completedDays
-                                                  .where(
-                                                      (cdate) => cdate != date)
-                                                  .toList();
-                                            } else {
-                                              habit.completedDays = [
-                                                ...habit.completedDays,
-                                                date,
-                                              ];
-                                            }
-                                            await _dbHelper.updateHabit(habit);
-                                            _loadHabits();
-                                          },
-                                          deleteHabit: (Habit habit) {
-                                            _deleteHabit(habit.id!);
-                                            _loadHabits();
-                                          },
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-
-                            if (habits.isEmpty)
-                              SizedBox(
-                                height:
-                                    MediaQuery.of(context).size.height * 0.4,
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Image.asset(
-                                        "assets/Empty.gif",
-                                        height: 100,
-                                        width: 100,
-                                      ),
-                                      SizedBox(
-                                        height: sizeConfig.large,
-                                      ),
-                                      Text(
-                                        "No Habits Created yet",
-                                        style: textConfig.whiteLarge,
-                                      ),
-                                      SizedBox(
-                                        height: sizeConfig.xl,
-                                      ),
-                                      FilledButton(
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              sizeConfig.large,
-                                            ),
-                                          ),
-                                        ),
-                                        onPressed: () async {
-                                          bool? habitAdded =
-                                              await context.push('/new-habit');
-
-                                          // If a habit was added, reload the list
-                                          if (habitAdded == true) {
-                                            _loadHabits(); // Refresh the habit list
-                                          }
-                                        },
-                                        child: Text(
-                                          "Add Habit",
-                                          style: textConfig.large,
-                                        ),
-                                      )
-                                    ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (!isCalendar)
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.zero,
+                          child: Column(
+                            children: [
+                              //Today Progress
+                              Container(
+                                width: width,
+                                padding: EdgeInsets.all(
+                                  sizeConfig.large,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF262626),
+                                  borderRadius: BorderRadius.circular(
+                                    sizeConfig.xxxl,
                                   ),
                                 ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding:
+                                          EdgeInsets.only(left: sizeConfig.xxs),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            getFormattedDate(),
+                                            style:
+                                                textConfig.greyLarge.copyWith(),
+                                          ),
+                                          Text(
+                                            "Today's Progress",
+                                            style: textConfig.whiteTitle,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: sizeConfig.large,
+                                    ),
+                                    Text(
+                                      "${habitCount > 0 ? ((habitCount / habits.length) * 100).toInt() : 0}%",
+                                      style: textConfig.whiteTitle.copyWith(
+                                        fontSize: sizeConfig.xxxxl * 2,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding:
+                                          EdgeInsets.only(left: sizeConfig.xs),
+                                      child: Text(
+                                        "$habitCount / ${habits.length} Habits",
+                                        style: textConfig.greyLarge.copyWith(),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: sizeConfig.xs,
+                                    ),
+                                    Padding(
+                                      padding:
+                                          EdgeInsets.only(right: sizeConfig.xs),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceEvenly,
+                                        children: List.generate(10, (index) {
+                                          // Calculate how many circles to highlight based on the percentage
+                                          int highlightedCircles = habitCount >
+                                                  0
+                                              ? (((habitCount / habits.length) *
+                                                              100)
+                                                          .toInt() /
+                                                      10)
+                                                  .ceil()
+                                              : 0; // Divide percentage by 10 to get the number of circles
+
+                                          return Expanded(
+                                            child: AspectRatio(
+                                              aspectRatio: 1,
+                                              child: Container(
+                                                margin: const EdgeInsets.all(2),
+                                                // Add margin for spacing
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: index <
+                                                          highlightedCircles
+                                                      ? Colors
+                                                          .green // Highlighted circles
+                                                      : Colors.green.withOpacity(
+                                                          0.2), // Unhighlighted circles
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }),
+                                      ),
+                                    )
+                                  ],
+                                ),
                               ),
-                            SizedBox(
-                              height: sizeConfig.xxxxxl * 2,
-                            )
+
+                              // Habits Grid View
+                              if (habits.isNotEmpty)
+                                Column(
+                                  children: [
+                                    SizedBox(height: sizeConfig.xl),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Container(
+                                          width: 80,
+                                          height: 30,
+                                          margin: EdgeInsets.only(
+                                            left: sizeConfig.xxs,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF2F2F2F),
+                                            borderRadius: BorderRadius.circular(
+                                              sizeConfig.xs,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    cardView = "grid";
+                                                    setState(() {});
+                                                  },
+                                                  child: Container(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                      horizontal: sizeConfig.xs,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: cardView == "grid"
+                                                          ? Colors.white
+                                                          : const Color(
+                                                              0xFF2C2C2C),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                        sizeConfig.xs,
+                                                      ),
+                                                    ),
+                                                    child: Center(
+                                                      child: Icon(
+                                                        Icons.grid_view_rounded,
+                                                        color:
+                                                            cardView == "grid"
+                                                                ? Colors.black
+                                                                : Colors.white,
+                                                        size: sizeConfig.xl,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    cardView = "list";
+                                                    setState(() {});
+                                                  },
+                                                  child: Container(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                      horizontal: sizeConfig.xs,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: cardView == "list"
+                                                          ? Colors.white
+                                                          : const Color(
+                                                              0xFF2C2C2C),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                        sizeConfig.xs,
+                                                      ),
+                                                    ),
+                                                    child: Center(
+                                                      child: Icon(
+                                                        Icons
+                                                            .table_rows_rounded,
+                                                        color:
+                                                            cardView == "list"
+                                                                ? Colors.black
+                                                                : Colors.white,
+                                                        size: sizeConfig.xl,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        IconButton.filled(
+                                          style: IconButton.styleFrom(
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                            padding: EdgeInsets.zero,
+                                            backgroundColor:
+                                                const Color(0xFF272727),
+                                          ),
+                                          onPressed: () async {
+                                            await context.push('/reorder');
+                                            _loadHabits();
+                                          },
+                                          icon: Icon(
+                                            Icons.format_list_numbered_rounded,
+                                            size: sizeConfig.xxl,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    CustomGridView(
+                                      crossAxisCount:
+                                          cardView == "grid" ? 2 : 1,
+                                      crossAxisSpacing: sizeConfig.large,
+                                      length: habits.length,
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      widgetOfIndex: (index) {
+                                        return GestureDetector(
+                                          onTap: () async {
+                                            await showModalBottomSheet(
+                                              context: context,
+                                              isScrollControlled: true,
+                                              builder: (context) {
+                                                return HabitBottomSheet(
+                                                  onDelete:
+                                                      (Habit? habit) async {
+                                                    if (habit != null) {
+                                                      await _dbHelper
+                                                          .deleteHabit(
+                                                              habit.id!);
+
+                                                      _loadHabits();
+                                                    }
+                                                  },
+                                                  onChange: (Habit? habit,
+                                                      DateTime? date) async {
+                                                    if (habit != null &&
+                                                        date != null) {
+                                                      if (habit.completedDays
+                                                          .contains(date)) {
+                                                        habit.completedDays =
+                                                            habit.completedDays
+                                                                .where(
+                                                                    (cdate) =>
+                                                                        cdate !=
+                                                                        date)
+                                                                .toList();
+                                                      } else {
+                                                        habit.completedDays = [
+                                                          ...habit
+                                                              .completedDays,
+                                                          date,
+                                                        ];
+                                                      }
+                                                      await _dbHelper
+                                                          .updateHabit(habit);
+                                                    }
+
+                                                    _loadHabits();
+                                                  },
+                                                  lastYearWeeks:
+                                                      getLastYearWeeks(
+                                                    DateTime.now(),
+                                                  ),
+                                                  habit: habits[index],
+                                                );
+                                              },
+                                            );
+                                          },
+                                          child: HabitCard(
+                                            habit: habits[index],
+                                            threeWeeks: threeWeeks,
+                                            lastYearWeeks: lastYearWeeks,
+                                            isGrid: cardView == "grid",
+                                            markHabitAsDone: (Habit habit,
+                                                DateTime date) async {
+                                              if (habit.completedDays
+                                                  .contains(date)) {
+                                                habit.completedDays = habit
+                                                    .completedDays
+                                                    .where((cdate) =>
+                                                        cdate != date)
+                                                    .toList();
+                                              } else {
+                                                habit.completedDays = [
+                                                  ...habit.completedDays,
+                                                  date,
+                                                ];
+                                              }
+                                              await _dbHelper
+                                                  .updateHabit(habit);
+                                              _loadHabits();
+                                            },
+                                            deleteHabit: (Habit habit) {
+                                              _deleteHabit(habit.id!);
+                                              _loadHabits();
+                                            },
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+
+                              if (habits.isEmpty)
+                                SizedBox(
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.4,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Image.asset(
+                                          "assets/Empty.gif",
+                                          height: 100,
+                                          width: 100,
+                                        ),
+                                        SizedBox(
+                                          height: sizeConfig.large,
+                                        ),
+                                        Text(
+                                          "No Habits Created yet",
+                                          style: textConfig.whiteLarge,
+                                        ),
+                                        SizedBox(
+                                          height: sizeConfig.xl,
+                                        ),
+                                        FilledButton(
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                sizeConfig.large,
+                                              ),
+                                            ),
+                                          ),
+                                          onPressed: () async {
+                                            bool? habitAdded = await context
+                                                .push('/new-habit');
+
+                                            // If a habit was added, reload the list
+                                            if (habitAdded == true) {
+                                              _loadHabits(); // Refresh the habit list
+                                            }
+                                          },
+                                          child: Text(
+                                            "Add Habit",
+                                            style: textConfig.large,
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              SizedBox(
+                                height: sizeConfig.xxxxxl * 2,
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            Visibility(
+              visible: isUniverse,
+              child: Positioned(
+                bottom: MediaQuery.sizeOf(context).height * 0.3,
+                left: 0,
+                child: Container(
+                  height: 44,
+                  width: 44,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(sizeConfig.small),
+                      bottomRight: Radius.circular(sizeConfig.small),
+                    ),
+                    // color: Colors.white,
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF904CFF),
+                        Color(0xFF2D8CFF),
+                      ],
+                    ),
+                  ),
+                  child: TextButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: Colors.white,
+                          title: Text(
+                            "Message from Universe",
+                            style: textConfig.large.copyWith(
+                              fontSize: sizeConfig.xxl,
+                            ),
+                          ),
+                          content: Text(
+                            "or perhaps from barani or something he stumbled upon.",
+                            style: textConfig.medium,
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                context.pop();
+                              },
+                              child: Text(
+                                "Cancel",
+                                style: textConfig.large,
+                              ),
+                            ),
+                            FilledButton(
+                              onPressed: () {
+                                showRewardedAd(context);
+                              },
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.black,
+                              ),
+                              child: Text(
+                                "View",
+                                style: textConfig.large.copyWith(
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
-                      ),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                ],
-              ),
-            ),
-          ),
-          Visibility(
-            visible: isUniverse,
-            child: Positioned(
-              bottom: MediaQuery.sizeOf(context).height * 0.3,
-              left: 0,
-              child: Container(
-                height: 44,
-                width: 44,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                    topRight: Radius.circular(sizeConfig.small),
-                    bottomRight: Radius.circular(sizeConfig.small),
-                  ),
-                  // color: Colors.white,
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF904CFF),
-                      Color(0xFF2D8CFF),
-                    ],
-                  ),
-                ),
-                child: TextButton(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        backgroundColor: Colors.white,
-                        title: Text(
-                          "Message from Universe",
-                          style: textConfig.large.copyWith(
-                            fontSize: sizeConfig.xxl,
-                          ),
+                    child: Center(
+                      child: GradientIcon(
+                        icon: HugeIcons.strokeRoundedSaturn01,
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFFFFFFFF),
+                            Color(0xFFCDE4FF),
+                          ],
                         ),
-                        content: Text(
-                          "or perhaps from barani or something he stumbled upon.",
-                          style: textConfig.medium,
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              context.pop();
-                            },
-                            child: Text(
-                              "Cancel",
-                              style: textConfig.large,
-                            ),
+                        size: sizeConfig.xxxxl,
+                      )
+                          .animate(
+                            onPlay: (controller) => controller.repeat(),
+                          )
+                          .rotate(
+                            duration: const Duration(seconds: 6),
                           ),
-                          FilledButton(
-                            onPressed: () {
-                              isUniverse = false;
-                              setState(() {});
-                              context.pop();
-                              context.push(
-                                '/daily-message',
-                                extra: currentMessage,
-                              );
-                            },
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Colors.black,
-                            ),
-                            child: Text(
-                              "View",
-                              style: textConfig.large.copyWith(
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Center(
-                    child: GradientIcon(
-                      icon: HugeIcons.strokeRoundedSaturn01,
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFFFFFFFF),
-                          Color(0xFFCDE4FF),
-                        ],
-                      ),
-                      size: sizeConfig.xxxxl,
-                    )
-                        .animate(
-                          onPlay: (controller) => controller.repeat(),
-                        )
-                        .rotate(
-                          duration: const Duration(seconds: 6),
-                        ),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -33,7 +33,7 @@ class _DailyMessageScreenState extends State<DailyMessageScreen> {
                       horizontal: sizeConfig.xxxxl,
                     ),
                     child: Text(
-                      widget.message.quote,
+                      widget.message.title,
                       textAlign: TextAlign.center,
                       style: textConfig.title.copyWith(
                         color: Colors.white,
@@ -42,13 +42,19 @@ class _DailyMessageScreenState extends State<DailyMessageScreen> {
                     ),
                   ),
                   SizedBox(
-                    height: sizeConfig.xxxxxl,
+                    height: sizeConfig.xl,
                   ),
-                  Text(
-                    "- Mahatma Gandhi",
-                    textAlign: TextAlign.center,
-                    style: textConfig.medium.copyWith(
-                      color: Colors.white,
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: sizeConfig.xxxxl,
+                    ),
+                    child: Text(
+                      widget.message.quote,
+                      textAlign: TextAlign.center,
+                      style: textConfig.large.copyWith(
+                        color: Colors.white,
+                        fontSize: sizeConfig.xl,
+                      ),
                     ),
                   ),
                 ],
@@ -84,8 +90,8 @@ class _DailyMessageScreenState extends State<DailyMessageScreen> {
                         backgroundColor: Colors.white,
                       ),
                       child: Text(
-                        "Claim",
-                        style: textConfig.medium,
+                        "Claim Message",
+                        style: textConfig.large,
                       ),
                     ),
                   ),
