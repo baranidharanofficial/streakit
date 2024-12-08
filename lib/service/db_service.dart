@@ -22,14 +22,16 @@ class HabitDatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 1,
       onCreate: _createDB,
-      onUpgrade: _upgradeDB,
     );
   }
 
-  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
+  Future<void> _upgradeDB(Database db) async {
+    final result = await db.rawQuery("PRAGMA table_info(habits)");
+    final columnExists =
+        result.any((column) => column['name'] == 'order_index');
+    if (!columnExists) {
       await db.execute('''
         ALTER TABLE habits ADD COLUMN order_index INTEGER NOT NULL DEFAULT 0
       ''');
@@ -62,6 +64,7 @@ class HabitDatabaseHelper {
 
   Future<List<Habit>> readAllHabits() async {
     final db = await instance.database;
+    await _upgradeDB(db);
     final result = await db.query('habits', orderBy: 'order_index');
     return result.map((map) => Habit.fromMap(map)).toList();
   }
