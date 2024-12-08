@@ -22,9 +22,18 @@ class HabitDatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
+  }
+
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        ALTER TABLE habits ADD COLUMN order_index INTEGER NOT NULL DEFAULT 0
+      ''');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -33,16 +42,16 @@ class HabitDatabaseHelper {
     const intType = 'INTEGER NOT NULL';
 
     await db.execute('''
-    CREATE TABLE habits (
-      id $idType,
-      name $textType,
-      notes $textType,
-      icon $intType,
-      color $intType,
-      completed_days $textType NOT NULL,
-      order_index $intType NOT NULL DEFAULT 0 
-    )
-  ''');
+      CREATE TABLE habits (
+        id $idType,
+        name $textType,
+        notes $textType,
+        icon $intType,
+        color $intType,
+        completed_days $textType NOT NULL,
+        order_index $intType NOT NULL DEFAULT 0 
+      )
+    ''');
   }
 
   Future<Habit> createHabit(Habit habit) async {
