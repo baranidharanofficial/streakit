@@ -16,6 +16,17 @@ class DailyMessageScreen extends StatefulWidget {
 }
 
 class _DailyMessageScreenState extends State<DailyMessageScreen> {
+  List<String> lines = [];
+
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      lines = widget.message.quote.split(" /n ");
+      setState(() {});
+    });
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,30 +36,62 @@ class _DailyMessageScreenState extends State<DailyMessageScreen> {
           children: [
             Padding(
               padding: EdgeInsets.all(sizeConfig.large),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.message.title,
-                    textAlign: TextAlign.left,
-                    style: textConfig.title.copyWith(
-                      color: Colors.white,
-                      fontSize: sizeConfig.xxxxl,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      widget.message.title,
+                      textAlign: TextAlign.left,
+                      style: textConfig.title.copyWith(
+                        color: Colors.white,
+                        fontSize: sizeConfig.xxxxl,
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    height: sizeConfig.xl,
-                  ),
-                  Text(
-                    widget.message.quote,
-                    textAlign: TextAlign.left,
-                    style: textConfig.large.copyWith(
-                      color: Colors.white,
-                      fontSize: sizeConfig.xl,
+                    SizedBox(
+                      height: sizeConfig.xl,
                     ),
-                  ),
-                ],
+                    Container(
+                      padding: EdgeInsets.all(sizeConfig.xxxxl),
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 39, 39, 39),
+                        borderRadius: BorderRadius.circular(sizeConfig.xxl),
+                      ),
+                      child: ListView.separated(
+                        itemCount: lines.length,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        separatorBuilder: (context, index) {
+                          return SizedBox(
+                            height: sizeConfig.xl,
+                          );
+                        },
+                        itemBuilder: (context, index) {
+                          final line = lines[index]
+                              .trim(); // Trim leading/trailing spaces
+                          if (line.isEmpty) {
+                            return const SizedBox.shrink(); // Skip empty lines
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Text(
+                              line,
+                              textAlign: TextAlign.left,
+                              style: textConfig.large.copyWith(
+                                color: Colors.white,
+                                fontSize: sizeConfig.large,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    SizedBox(
+                      height: sizeConfig.xxxxxl * 4,
+                    ),
+                  ],
+                ),
               ),
             ),
             Positioned(
