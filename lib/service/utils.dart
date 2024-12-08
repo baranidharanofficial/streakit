@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:streakit/constants.dart';
 import 'package:streakit/main.dart';
@@ -116,4 +117,8 @@ String getWeekdayName(int day) {
   } else {
     return "Invalid day";
   }
+}
+
+hasInternet() async {
+  return await InternetConnection().hasInternetAccess;
 }

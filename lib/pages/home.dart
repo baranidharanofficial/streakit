@@ -1071,7 +1071,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             FilledButton(
                               onPressed: () {
-                                showRewardedAd(context);
+                                if (_rewardedAd != null) {
+                                  showRewardedAd(context);
+                                } else {
+                                  context.pop();
+                                  context.push(
+                                    '/daily-message',
+                                    extra: currentMessage,
+                                  );
+                                }
                               },
                               style: FilledButton.styleFrom(
                                 backgroundColor: Colors.black,
